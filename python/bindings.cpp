@@ -176,7 +176,7 @@ void joseph3d_back_py(py::object xstart,
 }
 
 // Pybind11 module definition
-PYBIND11_MODULE(parallelproj_python, m)
+PYBIND11_MODULE(parallelproj_backend, m)
 {
     m.doc() = "Python bindings for parallelproj backend";
 

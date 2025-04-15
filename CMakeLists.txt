@@ -140,16 +140,17 @@ if(BUILD_PYTHON_INTERFACE)
     endif()
 
     # Add the Python module
-    pybind11_add_module(parallelproj_python
+    pybind11_add_module(parallelproj_backend
         python/bindings.cpp
     )
 
-    target_include_directories(parallelproj_python PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
+    target_include_directories(parallelproj_backend PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     # Link the core library to the Python module
-    target_link_libraries(parallelproj_python PRIVATE parallelproj)
+    target_link_libraries(parallelproj_backend PRIVATE parallelproj)
 
     # Pass the PARALLELPROJ_CUDA definition to the Python module
-    target_compile_definitions(parallelproj_python PRIVATE PARALLELPROJ_CUDA=${PARALLELPROJ_CUDA})
+    target_compile_definitions(parallelproj_backend PRIVATE PARALLELPROJ_CUDA=${PARALLELPROJ_CUDA})
+
 endif()
 
 ################################################################################

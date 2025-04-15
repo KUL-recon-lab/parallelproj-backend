@@ -1,5 +1,5 @@
 import numpy as np
-import parallelproj_python as pp
+import parallelproj_backend as pp
 
 from types import ModuleType
 

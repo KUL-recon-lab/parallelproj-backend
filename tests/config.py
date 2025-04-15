@@ -3,7 +3,7 @@ import pytest
 import array_api_strict as nparr
 import array_api_compat.numpy as np
 
-import parallelproj_python as pp
+import parallelproj_backend as pp
 
 # generate list of array_api modules / device combinations to test
 
