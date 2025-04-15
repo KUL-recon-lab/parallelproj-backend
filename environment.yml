@@ -9,5 +9,6 @@ channels:
   - dlpack
   - pybind11
   - numpy
+  - array-api-compat
   - array-api-strict
   - cuda-toolkit
