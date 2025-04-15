@@ -1,3 +1,7 @@
+# ignore all files in build folder matches build*/*
+build*/*
+
+
 # Prerequisites
 *.d
 
