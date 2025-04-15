@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Set up Micromamba
+    - name: Set up Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: "latest"
+        environment-file: environment.yml
+        activate-environment: myenv
+
+    # Step 4: Configure and Build with CMake and Ninja
+    - name: Configure and Build
+      shell: micromamba-shell {0}
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
+        cmake --build .
+
+    # Step 5: Run Tests with CTest
+    - name: Run Tests
+      shell: micromamba-shell {0}
+      run: |
+        cd build
+        ctest --output-on-failure
