@@ -29,14 +29,19 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
         COMMAND git describe --tags --long --dirty
         OUTPUT_VARIABLE GIT_DESCRIBE
         OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
     )
-    string(REGEX MATCH "v?([0-9]+\\.[0-9]+\\.[0-9]+)" PROJECT_VERSION "${GIT_DESCRIBE}")
-    string(REGEX REPLACE "^v" "" PROJECT_VERSION "${PROJECT_VERSION}")
+    if(GIT_DESCRIBE)
+        string(REGEX MATCH "v?([0-9]+\\.[0-9]+\\.[0-9]+)" PROJECT_VERSION "${GIT_DESCRIBE}")
+        string(REGEX REPLACE "^v" "" PROJECT_VERSION "${PROJECT_VERSION}")
+    else()
+        set(PROJECT_VERSION "0.0.0") # Fallback version
+    endif()
 else()
     get_filename_component(FOLDER_NAME ${CMAKE_SOURCE_DIR} NAME)
     string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+)" PROJECT_VERSION "${FOLDER_NAME}")
     if(NOT PROJECT_VERSION)
-        set(PROJECT_VERSION "0.0.0")
+        set(PROJECT_VERSION "0.0.0") # Fallback version
     endif()
 endif()
 
