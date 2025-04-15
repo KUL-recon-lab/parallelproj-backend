@@ -71,6 +71,7 @@ if(CMAKE_CUDA_COMPILER)
 
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_ARCHITECTURES all)
     set(PARALLELPROJ_CUDA 1)
     
     add_library(parallelproj SHARED ${LIB_SOURCES})
