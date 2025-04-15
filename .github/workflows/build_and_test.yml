@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        shell: [bash, powershell, bash]
 
     steps:
     # Step 1: Checkout the repository
@@ -24,13 +23,13 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
-        init-shell: ${{ matrix.shell }}
+        init-shell: bash
         cache-environment: true
         post-cleanup: all
 
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
-      shell: ${{ matrix.shell }}
+      shell: bash
       run: |
         mkdir build
         cd build
@@ -39,7 +38,7 @@ jobs:
 
     # Step 4: Run Tests with CTest
     - name: Run Tests
-      shell: ${{ matrix.shell }}
+      shell: bash
       run: |
         cd build
         ctest --output-on-failure
