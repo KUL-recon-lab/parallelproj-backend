@@ -1,5 +1,6 @@
 # ignore all files in build folder matches build*/*
 build*/*
+tests/__pycache__/*
 
 
 # Prerequisites

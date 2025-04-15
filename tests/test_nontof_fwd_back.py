@@ -1,6 +1,6 @@
 import numpy as np
 import array_api_strict as xp
-import parallelproj_pybind as pp
+import parallelproj_python as pp
 import pytest
 
 

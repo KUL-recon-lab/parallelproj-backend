@@ -65,6 +65,11 @@ endif()
 ### DEFINE TARGETS #############################################################
 ################################################################################
 
+# Set the number of parallel jobs for Link Time Optimization (LTO)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_JOBS 4) # Adjust the number of jobs as needed
+endif()
 
 if(USE_CUDA)
     message(STATUS "CUDA build enabled.")
@@ -135,13 +140,13 @@ if(BUILD_PYTHON_INTERFACE)
     endif()
 
     # Add the Python module
-    pybind11_add_module(parallelproj_pybind
-        src/parallelproj_pybind.cpp
+    pybind11_add_module(parallelproj_python
+        python/bindings.cpp
     )
 
-    target_include_directories(parallelproj_pybind PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
+    target_include_directories(parallelproj_python PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     # Link the core library to the Python module
-    target_link_libraries(parallelproj_pybind PRIVATE parallelproj)
+    target_link_libraries(parallelproj_python PRIVATE parallelproj)
 endif()
 
 
