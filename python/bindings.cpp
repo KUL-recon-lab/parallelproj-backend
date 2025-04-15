@@ -178,7 +178,14 @@ void joseph3d_back_py(py::object xstart,
 // Pybind11 module definition
 PYBIND11_MODULE(parallelproj_python, m)
 {
-    m.doc() = "Python bindings for parallelproj";
+    m.doc() = "Python bindings for parallelproj backend";
+
+    // Expose the PARALLELPROJ_CUDA definition as a Python constant
+#ifdef PARALLELPROJ_CUDA
+    m.attr("PARALLELPROJ_CUDA") = PARALLELPROJ_CUDA;
+#else
+    m.attr("PARALLELPROJ_CUDA") = 0; // Default to 0 if not defined
+#endif
 
     m.def("joseph3d_fwd", &joseph3d_fwd_py, "Forward projection",
           py::arg("xstart"), py::arg("xend"), py::arg("img"), py::arg("img_origin"),

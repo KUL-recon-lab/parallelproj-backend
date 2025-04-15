@@ -37,7 +37,7 @@ def test_forward_and_back_projection(xp: ModuleType, dev: str):
 
     # Read the expected forward values from file
     expected_fwd_vals = xp.reshape(
-        xp.asarray(np.loadtxt("expected_fwd_vals.txt", dtype=np.float32)),
+        xp.asarray(np.loadtxt("expected_fwd_vals.txt", dtype=np.float32), device=dev),
         xstart.shape[:-1],
     )
 
@@ -52,7 +52,7 @@ def test_forward_and_back_projection(xp: ModuleType, dev: str):
     # Check if we got the expected results
     eps = 1e-7
     assert (
-        xp.max(xp.abs(img_fwd - expected_fwd_vals)) < eps
+        float(xp.max(xp.abs(img_fwd - expected_fwd_vals))) < eps
     ), "Forward projection test failed."
 
     # Allocate memory for back projection results
