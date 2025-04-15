@@ -30,7 +30,7 @@ jobs:
 
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
-      shell: ${{ matrix.shell }}-shell {0}
+      shell: ${{ matrix.shell }}
       run: |
         mkdir build
         cd build
@@ -39,7 +39,7 @@ jobs:
 
     # Step 4: Run Tests with CTest
     - name: Run Tests
-      shell: ${{ matrix.shell }}-shell {0}
+      shell: ${{ matrix.shell }}
       run: |
         cd build
         ctest --output-on-failure
