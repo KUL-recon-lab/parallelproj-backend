@@ -23,40 +23,24 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
-        init-shell: bash powershell
         micromamba-version: latest
+        init-shell: bash
         post-cleanup: all
 
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
-      run: |
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
-        cmake --build .
       shell: bash
-      if: runner.os != 'Windows'
-
-    - name: Configure and Build (Windows)
       run: |
+        micromamba activate parallelproj_backend
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
         cmake --build .
-      shell: powershell
-      if: runner.os == 'Windows'
 
     # Step 4: Run Tests with CTest
     - name: Run Tests
-      run: |
-        cd build
-        ctest --output-on-failure
       shell: bash
-      if: runner.os != 'Windows'
-
-    - name: Run Tests (Windows)
       run: |
+        micromamba activate parallelproj_backend
         cd build
         ctest --output-on-failure
-      shell: powershell
-      if: runner.os == 'Windows'
