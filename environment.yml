@@ -6,7 +6,6 @@ channels:
 dependencies:
   - c-compiler
   - cmake
-  - ninja
   - dlpack
   - pybind11
   - numpy

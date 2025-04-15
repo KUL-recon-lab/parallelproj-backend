@@ -16,12 +16,9 @@ jobs:
       uses: actions/checkout@v3
 
     # Step 2: Set up Micromamba
-    - name: Set up Micromamba
-      uses: mamba-org/setup-micromamba@v1
+    - uses: mamba-org/setup-micromamba@v2
       with:
-        micromamba-version: "latest"
         environment-file: environment.yml
-        activate-environment: myenv
 
     # Step 4: Configure and Build with CMake and Ninja
     - name: Configure and Build
@@ -29,7 +26,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
         cmake --build .
 
     # Step 5: Run Tests with CTest
