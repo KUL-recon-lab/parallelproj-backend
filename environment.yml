@@ -11,3 +11,4 @@ dependencies:
   - numpy
   - array-api-compat
   - array-api-strict
+  - pytest
