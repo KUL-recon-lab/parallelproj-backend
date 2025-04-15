@@ -198,7 +198,7 @@ endforeach()
 if(BUILD_PYTHON_INTERFACE)
     ### ADD THE PYTHON INTERFACE TESTS ###
     find_program(PYTEST_EXECUTABLE pytest REQUIRED)
-    add_test(NAME python_interface_test COMMAND pytest ${CMAKE_SOURCE_DIR}/tests)
+    add_test(NAME python_interface_test COMMAND pytest -v ${CMAKE_SOURCE_DIR}/tests)
 
     # Set PYTHONPATH to include the build directory
     set_tests_properties(python_interface_test PROPERTIES

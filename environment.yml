@@ -1,0 +1,13 @@
+name: parallelproj_backend
+
+channels:
+  - conda-forge
+
+  dependencies:
+  - c-compiler
+  - cmake
+  - dlpack
+  - pybind11
+  - numpy
+  - array-api-strict
+  - cuda-toolkit
