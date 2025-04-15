@@ -1,19 +1,23 @@
 cmake_minimum_required(VERSION 3.18)
 project(PARALLELPROJ LANGUAGES C CXX)
 
-# Set the C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Add an option to build the Python interface
-option(BUILD_PYTHON_INTERFACE "Build the Python interface using pybind11" OFF)
-
-
 include(CheckLanguage)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# Set the C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    option(USE_CUDA "Enable CUDA build" ON)
+else()
+    option(USE_CUDA "Enable CUDA build" OFF)
+endif()
+
+# Add an option to build the Python interface
+option(BUILD_PYTHON_INTERFACE "Build the Python interface using pybind11" OFF)
 
 # Enable automatic symbol export on Windows for shared libraries
 if(WIN32 AND BUILD_SHARED_LIBS)
@@ -62,7 +66,9 @@ endif()
 ################################################################################
 
 
-if(CMAKE_CUDA_COMPILER)
+if(USE_CUDA)
+    message(STATUS "CUDA build enabled.")
+
     set(LIB_SOURCES
         src/joseph3d_fwd.cu
         src/joseph3d_back.cu
@@ -84,6 +90,8 @@ if(CMAKE_CUDA_COMPILER)
         tests/test_nontof_fwd_back_cuda.cu
     )
 else()
+    message(STATUS "CUDA build disabled.")
+
     set(LIB_SOURCES
         src/joseph3d_fwd.cpp
         src/joseph3d_back.cpp
@@ -174,7 +182,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj ${CMAKE_SOURCE_DIR}/tests)
     add_dependencies(${TEST_NAME} copy_test_data) # Ensure test data is copied before running tests
-    if(CMAKE_CUDA_COMPILER)
+    if(USE_CUDA)
         target_link_libraries(${TEST_NAME} PRIVATE parallelproj CUDA::cudart)
     else()
         target_link_libraries(${TEST_NAME} PRIVATE parallelproj OpenMP::OpenMP_CXX)
