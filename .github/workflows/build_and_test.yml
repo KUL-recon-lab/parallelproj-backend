@@ -23,13 +23,15 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
-        init-shell: bash
+        init-shell: true
+        micromamba-version: latest
+        cache-downloads: true
         cache-environment: true
         post-cleanup: all
 
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
-      shell: bash
+      shell: micromamba-shell {0}
       run: |
         mkdir build
         cd build
@@ -38,7 +40,7 @@ jobs:
 
     # Step 4: Run Tests with CTest
     - name: Run Tests
-      shell: bash
+      shell: micromamba-shell {0}
       run: |
         cd build
         ctest --output-on-failure
