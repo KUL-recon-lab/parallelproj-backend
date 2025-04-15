@@ -152,6 +152,9 @@ if(BUILD_PYTHON_INTERFACE)
     # Pass the PARALLELPROJ_CUDA definition to the Python module
     target_compile_definitions(parallelproj_backend PRIVATE PARALLELPROJ_CUDA=${PARALLELPROJ_CUDA})
 
+    # Ensure parallelproj is built before parallelproj_backend
+    add_dependencies(parallelproj_backend parallelproj)
+
 endif()
 
 ################################################################################
