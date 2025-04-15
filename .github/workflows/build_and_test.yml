@@ -8,7 +8,11 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     # Step 1: Checkout the repository
@@ -19,13 +23,11 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
-        init-shell: >-
-          bash
-          powershell
+        init-shell: ${{ matrix.shell }}
         cache-environment: true
-        post-cleanup: 'all'
+        post-cleanup: all
 
-    # Step 4: Configure and Build with CMake and Ninja
+    # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
       shell: micromamba-shell {0}
       run: |
@@ -34,7 +36,7 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
         cmake --build .
 
-    # Step 5: Run Tests with CTest
+    # Step 4: Run Tests with CTest
     - name: Run Tests
       shell: micromamba-shell {0}
       run: |
