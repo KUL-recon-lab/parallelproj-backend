@@ -16,7 +16,7 @@ void joseph3d_back(const float *xstart,
 {
 
 #pragma omp parallel for
-    for (size_t i = 0; i < nlors; ++i)
+    for (long long i = 0; i < static_cast<long long>(nlors); ++i)
     {
         joseph3d_back_worker(i, xstart, xend, img, img_origin, voxsize, p, img_dim);
     }
