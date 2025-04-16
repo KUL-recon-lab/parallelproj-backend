@@ -1,75 +1,56 @@
-name: Build cuda
+name: CUDA Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 jobs:
-  build-cuda:
+  cuda-build:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 0: get cuda toolkit
-    - name: Install CUDA Toolkit
-      id: cuda-toolkit
-      uses: Jimver/cuda-toolkit@v0.2.23
-      with:
-        cuda: '12.6.0'
-        method: 'network'
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    # Step 0b print `which nvcc`
-    - name: Print nvcc path
-      shell: bash -el {0}
-      run: |
-        echo "PATH: $PATH"
-        echo "CUDA_HOME: $CUDA_HOME"
-        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-        which nvcc
-        nvcc --version
-        echo "CUDA_PATH: ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
+      - name: Install CUDA Toolkit
+        id: cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.23
+        with:
+          cuda: '12.2.0'
+          method: 'network'
+          use-cache: false
 
-    # Step 1: Checkout the repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Install Build Tools
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
 
-    # Step 2: Set up Micromamba
-    - uses: mamba-org/setup-micromamba@v2
-      with:
-        environment-file: environment.yml
-        micromamba-version: latest
-        init-shell: bash
-        post-cleanup: all
-    
-    - name: Install GCC toolchain in Micromamba
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        micromamba install -y c-compiler
-    
-    # Step 3: Configure and Build with CMake and Ninja
-    - name: Configure and Build
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        mkdir build
-        cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=${{steps.cuda-toolkit.outputs.CUDA_PATH}} -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc
-        cmake --build .
+      - name: Check CUDA Setup
+        run: |
+          echo "CUDA Path: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}"
+          which nvcc
+          nvcc --version
+          g++ --version
 
-    # Step 4: Install
-    - name: Install
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        cmake --install .
+      - name: Configure and Build with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }} \
+            -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc \
+            -DBUILD_PYTHON_INTERFACE=OFF
+          cmake --build .
 
-    # Step 5: Uninstall
-    - name: Uninstall
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        cmake --build . --target uninstall
+      - name: Install
+        shell: bash -el {0}
+        run: |
+          cd build
+          cmake --install .
+
+      - name: Uninstall
+        shell: bash -el {0}
+        run: |
+          cd build
+          cmake --build . --target uninstall
