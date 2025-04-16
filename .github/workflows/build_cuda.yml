@@ -46,7 +46,7 @@ jobs:
             -DCUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }} \
             -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc \
             -DBUILD_PYTHON_INTERFACE=ON \
-            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install 
           cmake --build .
 
       - name: Install
