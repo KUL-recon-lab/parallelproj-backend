@@ -99,6 +99,7 @@ if(USE_CUDA)
     target_include_directories(parallelproj PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     target_link_libraries(parallelproj PRIVATE CUDA::cudart)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1) 
+    target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
         tests/test_nontof_fwd_back.cpp
@@ -119,6 +120,7 @@ else()
     target_include_directories(parallelproj PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     target_link_libraries(parallelproj PRIVATE OpenMP::OpenMP_CXX)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=0)
+    target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
         tests/test_nontof_fwd_back.cpp
@@ -224,12 +226,10 @@ if(BUILD_TESTS)
     if(BUILD_PYTHON_INTERFACE)
         ### ADD THE PYTHON INTERFACE TESTS ###
         find_program(PYTEST_EXECUTABLE pytest REQUIRED)
+
         add_test(NAME python_interface_test COMMAND ${Python3_EXECUTABLE} -m  pytest -v ${CMAKE_SOURCE_DIR}/tests)
 
-        # Set PYTHONPATH to include the build directory
-        set_tests_properties(python_interface_test PROPERTIES
-            ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}:$ENV{PYTHONPATH}"
-        )
+        set_tests_properties(python_interface_test PROPERTIES ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:parallelproj_backend>$<SEMICOLON>$ENV{PYTHONPATH}") 
     endif()
 endif()
 
