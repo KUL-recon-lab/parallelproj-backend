@@ -49,7 +49,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=${{steps.cuda-toolkit.outputs.CUDA_PATH}}
+        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=${{steps.cuda-toolkit.outputs.CUDA_PATH}} -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc
         cmake --build .
 
     # Step 4: Install
