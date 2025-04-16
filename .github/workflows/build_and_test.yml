@@ -44,3 +44,19 @@ jobs:
         micromamba activate parallelproj_backend
         cd build
         ctest --output-on-failure
+
+    # Step 5: Install
+    - name: Install
+      shell: bash -el {0}
+      run: |
+        micromamba activate parallelproj_backend
+        cd build
+        cmake --install .
+
+    # Step 6: Uninstall
+    - name: Install
+      shell: bash -el {0}
+      run: |
+        micromamba activate parallelproj_backend
+        cd build
+        cmake --build . --target uninstall
