@@ -127,6 +127,7 @@ endif()
 if(BUILD_PYTHON_INTERFACE)
     find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
     message(STATUS "Python3 found at: ${Python3_EXECUTABLE}")
+    message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
 
     # Enable the use of FindPython in pybind11
     set(PYBIND11_FINDPYTHON ON)
@@ -273,4 +274,21 @@ install(FILES
     ${CMAKE_BINARY_DIR}/parallelprojConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parallelproj
 )
+
+################################################################################
+### UNINSTALL SCRIPT ###########################################################
+################################################################################
+
+# Create an uninstall script
+if(NOT TARGET uninstall)
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
+        ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake
+        IMMEDIATE @ONLY
+    )
+
+    add_custom_target(uninstall
+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake
+    )
+endif()
 
