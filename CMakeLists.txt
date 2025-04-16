@@ -143,7 +143,7 @@ if(BUILD_PYTHON_INTERFACE)
     message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
 
     # Add an option for the Python interface install destination
-    option(PYTHON_INTERFACE_INSTALL_DIR "Install destination for the Python interface" ${Python3_SITELIB})
+    set(PYTHON_INTERFACE_INSTALL_DIR ${Python3_SITELIB})
     message(STATUS "Python interface will be installed to: ${PYTHON_INTERFACE_INSTALL_DIR}")
 
     # Enable the use of FindPython in pybind11
