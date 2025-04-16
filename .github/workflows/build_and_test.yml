@@ -34,7 +34,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -DBUILD_PYTHON_INTERFACE=ON
+        cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
         cmake --build .
 
     # Step 4: Run Tests with CTest
