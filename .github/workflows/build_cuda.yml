@@ -13,6 +13,7 @@ jobs:
     steps:
     # Step 0: get cuda toolkit
     - name: Install CUDA Toolkit
+      id: cuda-toolkit
       uses: Jimver/cuda-toolkit@v0.2.23
       with:
         cuda: '12.6.0'
@@ -27,7 +28,7 @@ jobs:
         echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
         which nvcc
         nvcc --version
-        echo "CUDA_PATH:  ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
+        echo "CUDA_PATH: ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
 
     # Step 1: Checkout the repository
     - name: Checkout repository
