@@ -30,6 +30,11 @@ jobs:
           which nvcc
           nvcc --version
           g++ --version
+      
+      - name: Install Python development tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev python3-pip libdlpack-dev pybind11-dev python3-pybind11
 
       - name: Configure and Build with CMake
         run: |
@@ -40,7 +45,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }} \
             -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc \
-            -DBUILD_PYTHON_INTERFACE=OFF
+            -DBUILD_PYTHON_INTERFACE=ON \
+            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
           cmake --build .
 
       - name: Install
