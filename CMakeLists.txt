@@ -142,6 +142,10 @@ if(BUILD_PYTHON_INTERFACE)
     message(STATUS "Python3 found at: ${Python3_EXECUTABLE}")
     message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
 
+    # Add an option for the Python interface install destination
+    option(PYTHON_INTERFACE_INSTALL_DIR "Install destination for the Python interface" ${Python3_SITELIB})
+    message(STATUS "Python interface will be installed to: ${PYTHON_INTERFACE_INSTALL_DIR}")
+
     # Enable the use of FindPython in pybind11
     set(PYBIND11_FINDPYTHON ON)
     # Find pybind11
@@ -173,11 +177,11 @@ if(BUILD_PYTHON_INTERFACE)
     # Ensure parallelproj is built before parallelproj_backend
     add_dependencies(parallelproj_backend parallelproj)
 
-    # install parallelproj_backend to ${Python3_SITELIB} as required by conda-forge
+    # Install parallelproj_backend to the specified destination
     install(TARGETS parallelproj_backend
         EXPORT parallelprojTargets
-        LIBRARY DESTINATION ${Python3_SITELIB}
-        RUNTIME DESTINATION ${Python3_SITELIB}
+        LIBRARY DESTINATION ${PYTHON_INTERFACE_INSTALL_DIR}
+        RUNTIME DESTINATION ${PYTHON_INTERFACE_INSTALL_DIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 endif()
