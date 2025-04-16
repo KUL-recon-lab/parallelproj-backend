@@ -15,7 +15,8 @@ jobs:
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.23
       with:
-        cuda: '12.8.0'  # Choose your version
+        cuda: '12.2.0'
+        use-cache: false
 
     # Step 1: Checkout the repository
     - name: Checkout repository
