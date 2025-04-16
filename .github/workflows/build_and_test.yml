@@ -37,13 +37,17 @@ jobs:
         cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
         cmake --build .
 
-    # Step 4: Run Tests with CTest
     - name: Run Tests
       shell: bash -el {0}
       run: |
         micromamba activate parallelproj_backend
         cd build
-        ctest --output-on-failure
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          ctest -C Debug --output-on-failure
+        else
+          ctest --output-on-failure
+        fi
+
 
     # Step 5: Install
     - name: Install
