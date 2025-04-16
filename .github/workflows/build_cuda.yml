@@ -8,19 +8,14 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
 
     steps:
-
-    # Step 0: Setup MSVC Developer Command Prompt for Windows
-    # without that step we don't have access no the Ninja generator
-    - name: Setup MSVC Developer Command Prompt
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
+    # Step 0: get cuda toolkit
+    - name: Install CUDA Toolkit
+      uses: Jimver/cuda-toolkit@v0.2.23
+      with:
+        cuda: '12.8.0'  # Choose your version
 
     # Step 1: Checkout the repository
     - name: Checkout repository
@@ -44,15 +39,7 @@ jobs:
         cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
         cmake --build .
 
-    # Step 4: Run Tests
-    - name: Run Tests
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        ctest --output-on-failure
-
-    # Step 5: Install
+    # Step 4: Install
     - name: Install
       shell: bash -el {0}
       run: |
@@ -60,7 +47,7 @@ jobs:
         cd build
         cmake --install .
 
-    # Step 6: Uninstall
+    # Step 5: Uninstall
     - name: Uninstall
       shell: bash -el {0}
       run: |
