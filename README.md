@@ -39,7 +39,7 @@ To build the project without CUDA support:
 
 2. Configure the project with CMake:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=OFF
+   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=OFF -DBUILD_PYTHON_INTERFACE=OFF
    ```
 
 3. Build the project:
@@ -59,7 +59,7 @@ To build the project with CUDA support:
 
 2. Configure the project with CMake:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON
+   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DBUILD_PYTHON_INTERFACE=OFF
    ```
 
 3. Build the project:
