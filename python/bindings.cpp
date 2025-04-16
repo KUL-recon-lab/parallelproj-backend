@@ -111,7 +111,7 @@ void joseph3d_fwd_py(py::object xstart,
     }
 
     // Calculate nlors using xstart_shape (multiply shape except the last dimension)
-    size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, 1, std::multiplies<size_t>());
+    size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, static_cast<size_t>(1), std::multiplies<size_t>());
     int img_dim[3] = {static_cast<int>(img_shape[0]), static_cast<int>(img_shape[1]), static_cast<int>(img_shape[2])};
     size_t nvoxels = img_dim[0] * img_dim[1] * img_dim[2];
 
@@ -166,8 +166,7 @@ void joseph3d_back_py(py::object xstart,
     }
 
     // Calculate nlors using xstart_shape (multiply shape except the last dimension)
-    size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, 1, std::multiplies<size_t>());
-
+    size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, static_cast<size_t>(1), std::multiplies<size_t>());
     int img_dim[3] = {static_cast<int>(img_shape[0]), static_cast<int>(img_shape[1]), static_cast<int>(img_shape[2])};
     size_t nvoxels = img_dim[0] * img_dim[1] * img_dim[2];
 

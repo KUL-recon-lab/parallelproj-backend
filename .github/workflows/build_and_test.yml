@@ -17,6 +17,7 @@ jobs:
     steps:
 
     # Step 0: Setup MSVC Developer Command Prompt for Windows
+    # without that step we don't have access no the Ninja generator
     - name: Setup MSVC Developer Command Prompt
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
