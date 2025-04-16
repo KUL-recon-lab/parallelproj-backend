@@ -15,6 +15,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
+
+    # Step 0: Setup MSVC Developer Command Prompt for Windows
+    - name: Setup MSVC Developer Command Prompt
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     # Step 1: Checkout the repository
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -34,7 +40,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
         cmake --build .
 
     - name: Run Tests
@@ -42,12 +48,7 @@ jobs:
       run: |
         micromamba activate parallelproj_backend
         cd build
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          ctest -C Debug --output-on-failure
-        else
-          ctest --output-on-failure
-        fi
-
+        ctest --output-on-failure
 
     # Step 5: Install
     - name: Install
