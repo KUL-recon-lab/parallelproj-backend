@@ -42,6 +42,12 @@ jobs:
         init-shell: bash
         post-cleanup: all
     
+    - name: Install GCC toolchain in Micromamba
+      shell: bash -el {0}
+      run: |
+        micromamba activate parallelproj_backend
+        micromamba install -y c-compiler
+    
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
       shell: bash -el {0}
