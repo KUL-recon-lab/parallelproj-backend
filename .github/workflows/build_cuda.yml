@@ -16,6 +16,17 @@ jobs:
       uses: Jimver/cuda-toolkit@v0.2.23
       with:
         cuda: '12.6.0'
+        method: 'network'
+
+    # Step 0b print `which nvcc`
+    - name: Print nvcc path
+      shell: bash -el {0}
+      run: |
+        echo "PATH: $PATH"
+        echo "CUDA_HOME: $CUDA_HOME"
+        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        which nvcc
+        nvcc --version
 
     # Step 1: Checkout the repository
     - name: Checkout repository
@@ -36,7 +47,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=/usr/local/cuda
+        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=/usr/local/cuda -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
         cmake --build .
 
     # Step 4: Install
