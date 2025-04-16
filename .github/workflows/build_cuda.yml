@@ -27,6 +27,7 @@ jobs:
         echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
         which nvcc
         nvcc --version
+        echo "CUDA_PATH:  ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
 
     # Step 1: Checkout the repository
     - name: Checkout repository
@@ -47,7 +48,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=/usr/local/cuda -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=${{steps.cuda-toolkit.outputs.CUDA_PATH}}
         cmake --build .
 
     # Step 4: Install
