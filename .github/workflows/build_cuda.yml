@@ -15,8 +15,7 @@ jobs:
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.23
       with:
-        cuda: '12.2.0'
-        use-cache: false
+        cuda: '12.6.0'
 
     # Step 1: Checkout the repository
     - name: Checkout repository
@@ -29,7 +28,7 @@ jobs:
         micromamba-version: latest
         init-shell: bash
         post-cleanup: all
-
+    
     # Step 3: Configure and Build with CMake and Ninja
     - name: Configure and Build
       shell: bash -el {0}
@@ -37,7 +36,7 @@ jobs:
         micromamba activate parallelproj_backend
         mkdir build
         cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCUDAToolkit_ROOT=/usr/local/cuda
         cmake --build .
 
     # Step 4: Install
