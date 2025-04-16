@@ -54,7 +54,7 @@ jobs:
         cmake --install .
 
     # Step 6: Uninstall
-    - name: Install
+    - name: Uninstall
       shell: bash -el {0}
       run: |
         micromamba activate parallelproj_backend
