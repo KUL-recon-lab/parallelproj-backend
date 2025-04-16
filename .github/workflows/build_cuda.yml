@@ -17,7 +17,7 @@ jobs:
         id: cuda-toolkit
         uses: Jimver/cuda-toolkit@v0.2.23
         with:
-          cuda: '12.2.0'
+          cuda: '12.6.0'
           method: 'network'
           use-cache: false
 
@@ -54,3 +54,11 @@ jobs:
         run: |
           cd build
           cmake --build . --target uninstall
+      
+      - name: Clean up CUDA Toolkit
+        if: always()
+        run: |
+          echo "Cleaning up CUDA install..."
+          sudo rm -rf /usr/local/cuda*
+          sudo rm -rf ~/.cuda-toolkit
+          sudo rm -rf ~/cuda_installer*
