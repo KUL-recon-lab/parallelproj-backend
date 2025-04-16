@@ -96,7 +96,6 @@ if(USE_CUDA)
     set(PARALLELPROJ_CUDA 1)
     
     add_library(parallelproj SHARED ${LIB_SOURCES})
-    target_include_directories(parallelproj PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     target_link_libraries(parallelproj PRIVATE CUDA::cudart)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1) 
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
@@ -117,7 +116,6 @@ else()
     set(PARALLELPROJ_CUDA 0)
 
     add_library(parallelproj SHARED ${LIB_SOURCES})
-    target_include_directories(parallelproj PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
     target_link_libraries(parallelproj PRIVATE OpenMP::OpenMP_CXX)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=0)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
@@ -126,6 +124,13 @@ else()
         tests/test_nontof_fwd_back.cpp
     )
 endif()
+
+target_include_directories(parallelproj
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
 
 ################################################################################
 ### BUILD THE PYTHON INTERFACE #################################################
@@ -213,7 +218,7 @@ if(BUILD_TESTS)
     foreach(TEST_SOURCE ${TEST_SOURCES})
         get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
         add_executable(${TEST_NAME} ${TEST_SOURCE})
-        target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj ${CMAKE_SOURCE_DIR}/tests)
+        target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/tests)
         add_dependencies(${TEST_NAME} copy_test_data) # Ensure test data is copied before running tests
         if(USE_CUDA)
             target_link_libraries(${TEST_NAME} PRIVATE parallelproj CUDA::cudart)
