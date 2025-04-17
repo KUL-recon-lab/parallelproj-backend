@@ -1,39 +1,32 @@
-# Project info
+# Project Information
 PROJECT_NAME           = "parallelproj-backend"
-PROJECT_BRIEF          = "Documentation for parallelproj backend"
 OUTPUT_DIRECTORY       = docs
 INPUT                  = include/parallelproj.h
 RECURSIVE              = NO
 
-# Output formats
+# Build Settings
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
-GENERATE_MAN           = NO
-GENERATE_XML           = NO
-
-# Strip the path from file listings
-STRIP_FROM_PATH        = include
-
-# Index options
-FULL_PATH_NAMES        = NO
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
-EXTRACT_STATIC         = NO
 HIDE_UNDOC_MEMBERS     = YES
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = include
 
-# Use Markdown
-MARKDOWN_SUPPORT       = YES
-
-# Language and parser
-OPTIMIZE_OUTPUT_FOR_C  = YES
-EXTENSION_MAPPING      = cu=C++
-
-# Preprocessor
+# Preprocessing
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
-
-# Show brief descriptions
 JAVADOC_AUTOBRIEF      = YES
 
-# Warnings
-WARN_IF_UNDOCUMENTED   = YES
+# HTML Output
+HTML_OUTPUT            = html
+HTML_EXTRA_STYLESHEET  =  doxygen-awesome/doxygen-awesome.css
+
+GENERATE_TREEVIEW      = YES # optional. Also works without treeview
+DISABLE_INDEX = NO
+FULL_SIDEBAR = NO
+HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
+
+
+# Markdown support
+MARKDOWN_SUPPORT       = YES
