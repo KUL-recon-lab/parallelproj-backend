@@ -37,25 +37,42 @@ endif()
 ################################################################################
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    # Get the full output of git describe
     execute_process(
         COMMAND git describe --tags --long --dirty
         OUTPUT_VARIABLE GIT_DESCRIBE
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
-    if(GIT_DESCRIBE)
+
+    # Check if we are on a clean, tagged version
+    execute_process(
+        COMMAND git describe --tags --exact-match
+        OUTPUT_VARIABLE GIT_TAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    if(GIT_TAG AND NOT GIT_DESCRIBE MATCHES "-dirty$")
+        # Use only the tag if we are on a clean, tagged version
+        set(PROJECT_VERSION "${GIT_TAG}")
+    elseif(GIT_DESCRIBE)
+        # Use the full git describe output otherwise
         set(PROJECT_VERSION "${GIT_DESCRIBE}")
     else()
-        set(PROJECT_VERSION "0.0.0-unknown") # Fallback version
+        # Fallback version if git describe fails
+        set(PROJECT_VERSION "0.0.0-unknown")
     endif()
 else()
+    # Fallback for non-Git environments
     get_filename_component(FOLDER_NAME ${CMAKE_SOURCE_DIR} NAME)
     string(REGEX MATCH "([0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?)" PROJECT_VERSION "${FOLDER_NAME}")
     if(NOT PROJECT_VERSION)
-        set(PROJECT_VERSION "0.0.0-unknown") # Fallback version
+        set(PROJECT_VERSION "0.0.0-unknown")
     endif()
 endif()
 
+# Extract major, minor, and patch versions
 string(REGEX MATCHALL "[0-9]+" VERSION_PARTS "${PROJECT_VERSION}")
 list(GET VERSION_PARTS 0 PROJECT_VERSION_MAJOR)
 list(GET VERSION_PARTS 1 PROJECT_VERSION_MINOR)
