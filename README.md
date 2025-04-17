@@ -39,7 +39,7 @@ To build the project without CUDA support:
 
 2. Configure the project with CMake:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=OFF -DBUILD_PYTHON_INTERFACE=OFF
+   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=OFF
    ```
 
 3. Build the project:
@@ -59,7 +59,7 @@ To build the project with CUDA support:
 
 2. Configure the project with CMake:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DBUILD_PYTHON_INTERFACE=OFF
+   cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON
    ```
 
 3. Build the project:
@@ -88,11 +88,11 @@ To run the tests after building the project:
 ## Python Interface
 
 If you want to build the Python interface, ensure that `pybind11` and `DLPack` are installed. 
-Then, configure the project with the `BUILD_PYTHON_INTERFACE` option:
+Then, configure the project with the `BUILD_PYTHON` option:
 
 1. Configure the project:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_INTERFACE=ON
+   cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON
    ```
 
 2. Build the Python interface:

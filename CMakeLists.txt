@@ -22,7 +22,7 @@ else()
 endif()
 
 # Add an option to build the Python interface
-option(BUILD_PYTHON_INTERFACE "Build the Python interface using pybind11" ON)
+option(BUILD_PYTHON "Build the Python interface using pybind11" OFF)
 
 # Add an option to build the tests
 option(BUILD_TESTS "Build the tests" ON)
@@ -151,7 +151,7 @@ target_include_directories(parallelproj
 ################################################################################
 
 # Build the Python interface if enabled
-if(BUILD_PYTHON_INTERFACE)
+if(BUILD_PYTHON)
     find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
     message(STATUS "Python3 found at: ${Python3_EXECUTABLE}")
     message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
@@ -246,7 +246,7 @@ if(BUILD_TESTS)
         add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     endforeach()
 
-    if(BUILD_PYTHON_INTERFACE)
+    if(BUILD_PYTHON)
         ### ADD THE PYTHON INTERFACE TESTS ###
         find_program(PYTEST_EXECUTABLE pytest REQUIRED)
 

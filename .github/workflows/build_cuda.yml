@@ -45,7 +45,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }} \
             -DCMAKE_CUDA_COMPILER=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin/nvcc \
-            -DBUILD_PYTHON_INTERFACE=ON
+            -DBUILD_PYTHON=ON
           cmake --build .
 
       - name: Install

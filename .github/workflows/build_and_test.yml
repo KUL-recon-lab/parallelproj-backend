@@ -15,55 +15,54 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
+      # Step 0: Setup MSVC Developer Command Prompt for Windows
+      # without that step we don't have access no the Ninja generator
+      - name: Setup MSVC Developer Command Prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    # Step 0: Setup MSVC Developer Command Prompt for Windows
-    # without that step we don't have access no the Ninja generator
-    - name: Setup MSVC Developer Command Prompt
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Step 1: Checkout the repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Step 2: Set up Micromamba
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          micromamba-version: latest
+          init-shell: bash
+          post-cleanup: all
 
-    # Step 2: Set up Micromamba
-    - uses: mamba-org/setup-micromamba@v2
-      with:
-        environment-file: environment.yml
-        micromamba-version: latest
-        init-shell: bash
-        post-cleanup: all
+      # Step 3: Configure and Build with CMake and Ninja
+      - name: Configure and Build
+        shell: bash -el {0}
+        run: |
+          micromamba activate parallelproj_backend
+          mkdir build
+          cd build
+          cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DBUILD_PYTHON=ON
+          cmake --build .
 
-    # Step 3: Configure and Build with CMake and Ninja
-    - name: Configure and Build
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        mkdir build
-        cd build
-        cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
-        cmake --build .
+      # Step 4: Run Tests
+      - name: Run Tests
+        shell: bash -el {0}
+        run: |
+          micromamba activate parallelproj_backend
+          cd build
+          ctest --output-on-failure
 
-    # Step 4: Run Tests
-    - name: Run Tests
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        ctest --output-on-failure
+      # Step 5: Install
+      - name: Install
+        shell: bash -el {0}
+        run: |
+          micromamba activate parallelproj_backend
+          cd build
+          cmake --install .
 
-    # Step 5: Install
-    - name: Install
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        cmake --install .
-
-    # Step 6: Uninstall
-    - name: Uninstall
-      shell: bash -el {0}
-      run: |
-        micromamba activate parallelproj_backend
-        cd build
-        cmake --build . --target uninstall
+      # Step 6: Uninstall
+      - name: Uninstall
+        shell: bash -el {0}
+        run: |
+          micromamba activate parallelproj_backend
+          cd build
+          cmake --build . --target uninstall
