@@ -1,3 +1,17 @@
+/**
+ * @file parallelproj.h
+ * @brief Header file of the Cpp/CUDA parallelproj library.
+ *
+ * This file contains the declarations for the forward and back projection
+ * functions using the Joseph 3D algorithm. These functions support both
+ * CPU and GPU computations and are designed to work with host pointers,
+ * CUDA device pointers, or CUDA managed pointers.
+ *
+ * Functions:
+ * - joseph3d_fwd
+ * - joseph3d_back
+ */
+
 #pragma once
 #include <cstddef>
 // import parallelproj_export.h to get the PARALLELPROJ_API macro
