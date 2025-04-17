@@ -179,6 +179,13 @@ PYBIND11_MODULE(parallelproj_backend, m)
 {
     m.doc() = "Python bindings for parallelproj backend";
 
+    // Expose the project version as __version__
+#ifdef PROJECT_VERSION
+    m.attr("__version__") = PROJECT_VERSION;
+#else
+    m.attr("__version__") = "unknown";
+#endif
+
     // Expose the PARALLELPROJ_CUDA definition as a Python constant
 #ifdef PARALLELPROJ_CUDA
     m.attr("PARALLELPROJ_CUDA") = PARALLELPROJ_CUDA;
@@ -186,11 +193,77 @@ PYBIND11_MODULE(parallelproj_backend, m)
     m.attr("PARALLELPROJ_CUDA") = 0; // Default to 0 if not defined
 #endif
 
-    m.def("joseph3d_fwd", &joseph3d_fwd_py, "Forward projection",
+    m.def("joseph3d_fwd", &joseph3d_fwd_py, R"pbdoc(
+    Non-TOF forward projection using the Joseph 3D algorithm. (adjoint of joseph3d_back())
+
+    Parameters:
+    -----------
+    xstart : array-like
+        array of size [...,3] with the world coordinates of the start points of the LORs.
+
+    xend : array-like
+        array of size [...,3] with the world coordinates of the end points of the LORs.
+
+    img : array-like
+        3D array of shape [n0,n1,n2] containing the 3D image used for forward projection.
+
+    img_origin : array-like
+        array [x0_0, x0_1, x0_2] with the world coordinates of the center of the [0,0,0] voxel.
+
+    voxsize : array-like
+        array [vs0, vs1, vs2] of the voxel sizes (same units as world coordinates).
+
+    p : array-like
+        array of size [...] where the forward projection results will be stored.
+
+    device_id : int, optional
+        ID of the device to use for computation (default: 0).
+
+    threadsperblock : int, optional
+        Number of threads per block for GPU computation (default: 64).
+
+    Returns:
+    --------
+    None
+)pbdoc",
           py::arg("xstart"), py::arg("xend"), py::arg("img"), py::arg("img_origin"),
           py::arg("voxsize"), py::arg("p"), py::arg("device_id") = 0, py::arg("threadsperblock") = 64);
 
-    m.def("joseph3d_back", &joseph3d_back_py, "Back projection",
+    m.def("joseph3d_back", &joseph3d_back_py, R"pbdoc(
+    Non-TOF back projection using the Joseph 3D algorithm (adjoint of joseph3_fwd).
+
+    Parameters:
+    -----------
+    xstart : array-like
+        Array of size [...,3] with the world coordinates of the start points of the LORs.
+
+    xend : array-like
+        Array of size [...,3] with the world coordinates of the end points of the LORs.
+
+    img : array-like
+        3D array of shape [n0,n1,n2] containing the 3D image used for back projection (output).
+        The pixel [i,j,k] is stored at [n1*n2*i + n2*j + k].
+        !! Values are added to the existing array !!
+
+    img_origin : array-like
+        Array [x0_0, x0_1, x0_2] with the world coordinates of the center of the [0,0,0] voxel.
+
+    voxsize : array-like
+        Array [vs0, vs1, vs2] of the voxel sizes (same units as world coordinates).
+
+    p : array-like
+        Array of size [...] containing the values to be back projected.
+
+    device_id : int, optional
+        ID of the device to use for computation (default: 0).
+
+    threadsperblock : int, optional
+        Number of threads per block for GPU computation (default: 64).
+
+    Returns:
+    --------
+    None
+)pbdoc",
           py::arg("xstart"), py::arg("xend"), py::arg("img"), py::arg("img_origin"),
           py::arg("voxsize"), py::arg("p"), py::arg("device_id") = 0, py::arg("threadsperblock") = 64);
 }

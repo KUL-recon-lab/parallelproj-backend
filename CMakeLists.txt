@@ -171,7 +171,7 @@ if(BUILD_PYTHON_INTERFACE)
     target_link_libraries(parallelproj_backend PRIVATE parallelproj)
 
     # Pass the PARALLELPROJ_CUDA definition to the Python module
-    target_compile_definitions(parallelproj_backend PRIVATE PARALLELPROJ_CUDA=${PARALLELPROJ_CUDA})
+    target_compile_definitions(parallelproj_backend PRIVATE PARALLELPROJ_CUDA=${PARALLELPROJ_CUDA} PROJECT_VERSION="${PROJECT_VERSION}")
 
     # Ensure parallelproj is built before parallelproj_backend
     add_dependencies(parallelproj_backend parallelproj)
