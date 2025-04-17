@@ -1,0 +1,39 @@
+# Project info
+PROJECT_NAME           = "parallelproj-backend"
+PROJECT_BRIEF          = "Documentation for parallelproj backend"
+OUTPUT_DIRECTORY       = docs
+INPUT                  = include/parallelproj.h
+RECURSIVE              = NO
+
+# Output formats
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+
+# Strip the path from file listings
+STRIP_FROM_PATH        = include
+
+# Index options
+FULL_PATH_NAMES        = NO
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+HIDE_UNDOC_MEMBERS     = YES
+
+# Use Markdown
+MARKDOWN_SUPPORT       = YES
+
+# Language and parser
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTENSION_MAPPING      = cu=C++
+
+# Preprocessor
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+
+# Show brief descriptions
+JAVADOC_AUTOBRIEF      = YES
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = YES
