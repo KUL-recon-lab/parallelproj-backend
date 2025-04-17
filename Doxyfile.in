@@ -1,7 +1,8 @@
 # Project Information
 PROJECT_NAME           = "parallelproj-backend"
-OUTPUT_DIRECTORY       = docs
-INPUT                  = include/parallelproj.h
+PROJECT_NUMBER         = @PROJECT_VERSION@
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT_DIR@
+INPUT                  = @CMAKE_SOURCE_DIR@/include/parallelproj.h
 RECURSIVE              = NO
 
 # Build Settings
@@ -20,7 +21,7 @@ JAVADOC_AUTOBRIEF      = YES
 
 # HTML Output
 HTML_OUTPUT            = html
-HTML_EXTRA_STYLESHEET  =  doxygen-awesome/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  = @CMAKE_SOURCE_DIR@/doxygen-awesome/doxygen-awesome.css
 
 GENERATE_TREEVIEW      = YES # optional. Also works without treeview
 DISABLE_INDEX          = NO

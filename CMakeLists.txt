@@ -321,3 +321,37 @@ if(NOT TARGET uninstall)
     )
 endif()
 
+################################################################################
+### DOXYGEN DOCUMENTATION ######################################################
+################################################################################
+
+# Add an option to enable or disable building the documentation
+option(BUILD_DOCS "Build Doxygen documentation" OFF)
+
+if(BUILD_DOCS)
+    find_package(Doxygen REQUIRED)
+
+    # Set the Doxygen configuration file
+    set(DOXYGEN_INPUT_FILE ${CMAKE_SOURCE_DIR}/Doxyfile.in)
+    set(DOXYGEN_OUTPUT_FILE ${CMAKE_BINARY_DIR}/Doxyfile)
+    set(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/docs)
+
+    # Configure the Doxyfile with project-specific variables
+    configure_file(${DOXYGEN_INPUT_FILE} ${DOXYGEN_OUTPUT_FILE} @ONLY)
+
+
+    # Add a custom target to generate the documentation
+    add_custom_target(doxygen-docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUTPUT_FILE}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating Doxygen documentation..."
+        VERBATIM
+    )
+
+    # Add a clean target to remove the generated documentation
+    add_custom_target(doxygen-clean
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${DOXYGEN_OUTPUT_DIR}
+        COMMENT "Cleaning Doxygen documentation..."
+        VERBATIM
+    )
+endif()
