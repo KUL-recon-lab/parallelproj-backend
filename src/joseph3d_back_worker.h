@@ -37,7 +37,7 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
     float lsq, cos0_sq, cos1_sq, cos2_sq;
     unsigned short direction;
     int i0, i1, i2;
-    int i0_f, i1_f, i2_f;
+    float i0_f, i1_f, i2_f;
     float x_pr0, x_pr1, x_pr2;
 
     float xstart0 = xstart[i * 3 + 0];
