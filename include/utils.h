@@ -107,6 +107,8 @@ WORKER_QUALIFIER inline unsigned char ray_cube_intersection(float orig0,
  *   - bilinear_interp_fixed_2: plane at fixed i2, interpolate in (i0,i1)
  *
  * All take the full 3D image pointer `img` and dimensions n0,n1,n2 at runtime.
+ *
+ * If compiled with CUDA, these functions are device functions.
  */
 
 template <typename T = float>
