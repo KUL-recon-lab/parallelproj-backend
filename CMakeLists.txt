@@ -115,6 +115,8 @@ if(USE_CUDA)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
+        tests/test_bilinear_interp.cpp
+        tests/test_bilinear_interp_cuda.cu
         tests/test_nontof_fwd_back.cpp
         tests/test_nontof_fwd_back_cuda.cu
     )
@@ -135,6 +137,7 @@ else()
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
+        tests/test_bilinear_interp.cpp
         tests/test_nontof_fwd_back.cpp
     )
 endif()

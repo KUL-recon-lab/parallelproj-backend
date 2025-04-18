@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include "cuda_compat.h"
 
 WORKER_QUALIFIER inline void atomic_sum(float *target, float value)
@@ -97,4 +98,108 @@ WORKER_QUALIFIER inline unsigned char ray_cube_intersection(float orig0,
   }
 
   return (intersec);
+}
+
+/**
+ * Three bilinear interpolate functions for 3d image wit dims (n0,n1,n2) with uniform signatures:
+ *   - bilinear_interp_fixed_0: plane at fixed i0, interpolate in (i1,i2)
+ *   - bilinear_interp_fixed_1: plane at fixed i1, interpolate in (i0,i2)
+ *   - bilinear_interp_fixed_2: plane at fixed i2, interpolate in (i0,i1)
+ *
+ * All take the full 3D image pointer `img` and dimensions n0,n1,n2 at runtime.
+ */
+
+template <typename T = float>
+WORKER_QUALIFIER inline T bilinear_interp_fixed0(const T *img,
+                                                 int n0, int n1, int n2,
+                                                 int i0,
+                                                 float i_f1,
+                                                 float i_f2)
+{
+  // get the i0 image plane (contiguous in memory)
+  const T *img_plane = img + size_t(i0) * n1 * n2;
+
+  int i1_0 = int(floorf(i_f1));
+  int i2_0 = int(floorf(i_f2));
+  int i1_1 = i1_0 + 1;
+  int i2_1 = i2_0 + 1;
+
+  float w1 = i_f1 - i1_0;
+  float w2 = i_f2 - i2_0;
+
+  auto sample = [&](int i1, int i2) -> T
+  {
+    if (i1 < 0 || i1 >= n1 || i2 < 0 || i2 >= n2)
+      return T(0);
+    return img_plane[size_t(i1) * n2 + i2];
+  };
+
+  T v00 = sample(i1_0, i2_0);
+  T v10 = sample(i1_1, i2_0);
+  T v01 = sample(i1_0, i2_1);
+  T v11 = sample(i1_1, i2_1);
+
+  return v00 * (1 - w1) * (1 - w2) + v10 * (w1) * (1 - w2) + v01 * (1 - w1) * (w2) + v11 * (w1) * (w2);
+}
+
+template <typename T = float>
+WORKER_QUALIFIER inline T bilinear_interp_fixed1(const T *img,
+                                                 int n0, int n1, int n2,
+                                                 float i_f0,
+                                                 int i1,
+                                                 float i_f2)
+{
+  int i0_0 = int(floorf(i_f0));
+  int i2_0 = int(floorf(i_f2));
+  int i0_1 = i0_0 + 1;
+  int i2_1 = i2_0 + 1;
+
+  float w0 = i_f0 - i0_0;
+  float w2 = i_f2 - i2_0;
+
+  auto sample = [&](int i0, int i2) -> T
+  {
+    if (i0 < 0 || i0 >= n0 || i2 < 0 || i2 >= n2)
+      return T(0);
+    size_t idx = size_t(i0) * n1 * n2 + size_t(i1) * n2 + i2;
+    return img[idx];
+  };
+
+  T v00 = sample(i0_0, i2_0);
+  T v10 = sample(i0_1, i2_0);
+  T v01 = sample(i0_0, i2_1);
+  T v11 = sample(i0_1, i2_1);
+
+  return v00 * (1 - w0) * (1 - w2) + v10 * (w0) * (1 - w2) + v01 * (1 - w0) * (w2) + v11 * (w0) * (w2);
+}
+
+template <typename T = float>
+WORKER_QUALIFIER inline T bilinear_interp_fixed2(const T *img,
+                                                 int n0, int n1, int n2,
+                                                 float i_f0,
+                                                 float i_f1,
+                                                 int i2)
+{
+  int i0_0 = int(floorf(i_f0));
+  int i1_0 = int(floorf(i_f1));
+  int i0_1 = i0_0 + 1;
+  int i1_1 = i1_0 + 1;
+
+  float w0 = i_f0 - i0_0;
+  float w1 = i_f1 - i1_0;
+
+  auto sample = [&](int i0, int i1) -> T
+  {
+    if (i0 < 0 || i0 >= n0 || i1 < 0 || i1 >= n1)
+      return T(0);
+    size_t idx = size_t(i0) * n1 * n2 + size_t(i1) * n2 + i2;
+    return img[idx];
+  };
+
+  T v00 = sample(i0_0, i1_0);
+  T v10 = sample(i0_1, i1_0);
+  T v01 = sample(i0_0, i1_1);
+  T v11 = sample(i0_1, i1_1);
+
+  return v00 * (1 - w0) * (1 - w1) + v10 * (w0) * (1 - w1) + v01 * (1 - w0) * (w1) + v11 * (w0) * (w1);
 }
