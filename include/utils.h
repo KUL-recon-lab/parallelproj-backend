@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include "cuda_compat.h"
+#include "utils.h" // for atomic_sum
 
 WORKER_QUALIFIER inline void atomic_sum(float *target, float value)
 {
@@ -204,4 +205,122 @@ WORKER_QUALIFIER inline T bilinear_interp_fixed2(const T *img,
   T v11 = sample(i0_1, i1_1);
 
   return v00 * (1 - w0) * (1 - w1) + v10 * (w0) * (1 - w1) + v01 * (1 - w0) * (w1) + v11 * (w0) * (w1);
+}
+
+/**
+ * Three bilinear scatter (adjoint) functions for 3D image dims (n0,n1,n2):
+ *   - bilinear_interp_adj_fixed0: plane at fixed i0, scatter into (i1,i2)
+ *   - bilinear_interp_adj_fixed1: plane at fixed i1, scatter into (i0,i2)
+ *   - bilinear_interp_adj_fixed2: plane at fixed i2, scatter into (i0,i1)
+ *
+ * All take the full 3D image pointer `img`, dimensions n0,n1,n2,
+ * a fixed index, fractional coordinates, and a value to scatter back.
+ * Uses atomic_sum to work correctly on CUDA (__device__) and OpenMP.
+ */
+
+template <typename T = float>
+WORKER_QUALIFIER inline void bilinear_interp_adj_fixed0(
+    T *img,
+    int n0, int n1, int n2,
+    int i0,
+    float i_f1,
+    float i_f2,
+    T val)
+{
+  // pointer to the i0-th plane
+  T *plane = img + size_t(i0) * n1 * n2;
+
+  int i1_0 = int(floorf(i_f1));
+  int i2_0 = int(floorf(i_f2));
+  int i1_1 = i1_0 + 1;
+  int i2_1 = i2_0 + 1;
+
+  float w1 = i_f1 - i1_0;
+  float w2 = i_f2 - i2_0;
+  float w00 = (1 - w1) * (1 - w2);
+  float w10 = (w1) * (1 - w2);
+  float w01 = (1 - w1) * (w2);
+  float w11 = (w1) * (w2);
+
+  auto inject = [&](int i1, int i2, float w)
+  {
+    if (i1 < 0 || i1 >= n1 || i2 < 0 || i2 >= n2)
+      return;
+    atomic_sum(reinterpret_cast<float *>(&plane[size_t(i1) * n2 + i2]), val * w);
+  };
+
+  inject(i1_0, i2_0, w00);
+  inject(i1_1, i2_0, w10);
+  inject(i1_0, i2_1, w01);
+  inject(i1_1, i2_1, w11);
+}
+
+template <typename T = float>
+WORKER_QUALIFIER inline void bilinear_interp_adj_fixed1(
+    T *img,
+    int n0, int n1, int n2,
+    float i_f0,
+    int i1,
+    float i_f2,
+    T val)
+{
+  int i0_0 = int(floorf(i_f0));
+  int i2_0 = int(floorf(i_f2));
+  int i0_1 = i0_0 + 1;
+  int i2_1 = i2_0 + 1;
+
+  float w0 = i_f0 - i0_0;
+  float w2 = i_f2 - i2_0;
+  float w00 = (1 - w0) * (1 - w2);
+  float w10 = (w0) * (1 - w2);
+  float w01 = (1 - w0) * (w2);
+  float w11 = (w0) * (w2);
+
+  auto inject = [&](int i0, int i2, float w)
+  {
+    if (i0 < 0 || i0 >= n0 || i2 < 0 || i2 >= n2)
+      return;
+    size_t idx = size_t(i0) * n1 * n2 + size_t(i1) * n2 + i2;
+    atomic_sum(reinterpret_cast<float *>(&img[idx]), val * w);
+  };
+
+  inject(i0_0, i2_0, w00);
+  inject(i0_1, i2_0, w10);
+  inject(i0_0, i2_1, w01);
+  inject(i0_1, i2_1, w11);
+}
+
+template <typename T = float>
+WORKER_QUALIFIER inline void bilinear_interp_adj_fixed2(
+    T *img,
+    int n0, int n1, int n2,
+    float i_f0,
+    float i_f1,
+    int i2,
+    T val)
+{
+  int i0_0 = int(floorf(i_f0));
+  int i1_0 = int(floorf(i_f1));
+  int i0_1 = i0_0 + 1;
+  int i1_1 = i1_0 + 1;
+
+  float w0 = i_f0 - i0_0;
+  float w1 = i_f1 - i1_0;
+  float w00 = (1 - w0) * (1 - w1);
+  float w10 = (w0) * (1 - w1);
+  float w01 = (1 - w0) * (w1);
+  float w11 = (w0) * (w1);
+
+  auto inject = [&](int i0, int i1, float w)
+  {
+    if (i0 < 0 || i0 >= n0 || i1 < 0 || i1 >= n1)
+      return;
+    size_t idx = size_t(i0) * n1 * n2 + size_t(i1) * n2 + i2;
+    atomic_sum(reinterpret_cast<float *>(&img[idx]), val * w);
+  };
+
+  inject(i0_0, i1_0, w00);
+  inject(i0_1, i1_0, w10);
+  inject(i0_0, i1_1, w01);
+  inject(i0_1, i1_1, w11);
 }

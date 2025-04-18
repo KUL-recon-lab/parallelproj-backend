@@ -117,6 +117,7 @@ if(USE_CUDA)
     set(TEST_SOURCES
         tests/test_bilinear_interp.cpp
         tests/test_bilinear_interp_cuda.cu
+        tests/test_bilinear_interp_adj.cpp
         tests/test_nontof_fwd_back.cpp
         tests/test_nontof_fwd_back_cuda.cu
     )
@@ -138,6 +139,7 @@ else()
 
     set(TEST_SOURCES
         tests/test_bilinear_interp.cpp
+        tests/test_bilinear_interp_adj.cpp
         tests/test_nontof_fwd_back.cpp
     )
 endif()
