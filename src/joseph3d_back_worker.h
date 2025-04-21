@@ -37,10 +37,8 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
     float lsq, cos0_sq, cos1_sq, cos2_sq;
     unsigned short direction;
     int i0, i1, i2;
-    int i0_floor, i1_floor, i2_floor;
-    int i0_ceil, i1_ceil, i2_ceil;
+    float i0_f, i1_f, i2_f;
     float x_pr0, x_pr1, x_pr2;
-    float tmp_0, tmp_1, tmp_2;
 
     float xstart0 = xstart[i * 3 + 0];
     float xstart1 = xstart[i * 3 + 1];
@@ -155,33 +153,9 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
           x_pr1 = xstart1 + (img_origin0 + i0 * voxsize0 - xstart0) * d1 / d0;
           x_pr2 = xstart2 + (img_origin0 + i0 * voxsize0 - xstart0) * d2 / d0;
 
-          i1_floor = (int)floor((x_pr1 - img_origin1) / voxsize1);
-          i1_ceil = i1_floor + 1;
-
-          i2_floor = (int)floor((x_pr2 - img_origin2) / voxsize2);
-          i2_ceil = i2_floor + 1;
-
-          // calculate the distances to the floor normalized to [0,1]
-          // for the bilinear interpolation
-          tmp_1 = (x_pr1 - (i1_floor * voxsize1 + img_origin1)) / voxsize1;
-          tmp_2 = (x_pr2 - (i2_floor * voxsize2 + img_origin2)) / voxsize2;
-
-          if ((i1_floor >= 0) && (i1_floor < n1) && (i2_floor >= 0) && (i2_floor < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0 + n2 * i1_floor + i2_floor, (p[i] * (1 - tmp_1) * (1 - tmp_2) * cf));
-          }
-          if ((i1_ceil >= 0) && (i1_ceil < n1) && (i2_floor >= 0) && (i2_floor < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0 + n2 * i1_ceil + i2_floor, (p[i] * tmp_1 * (1 - tmp_2) * cf));
-          }
-          if ((i1_floor >= 0) && (i1_floor < n1) && (i2_ceil >= 0) && (i2_ceil < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0 + n2 * i1_floor + i2_ceil, (p[i] * (1 - tmp_1) * tmp_2 * cf));
-          }
-          if ((i1_ceil >= 0) && (i1_ceil < n1) && (i2_ceil >= 0) && (i2_ceil < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0 + n2 * i1_ceil + i2_ceil, (p[i] * tmp_1 * tmp_2 * cf));
-          }
+          i1_f = (x_pr1 - img_origin1) / voxsize1;
+          i2_f = (x_pr2 - img_origin2) / voxsize2;
+          bilinear_interp_adj_fixed0(img, n0, n1, n2, i0, i1_f, i2_f, p[i] * cf);
         }
       }
       // ---------------------------------------------------------------------------------
@@ -246,33 +220,9 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
           x_pr0 = xstart0 + (img_origin1 + i1 * voxsize1 - xstart1) * d0 / d1;
           x_pr2 = xstart2 + (img_origin1 + i1 * voxsize1 - xstart1) * d2 / d1;
 
-          i0_floor = (int)floor((x_pr0 - img_origin0) / voxsize0);
-          i0_ceil = i0_floor + 1;
-
-          i2_floor = (int)floor((x_pr2 - img_origin2) / voxsize2);
-          i2_ceil = i2_floor + 1;
-
-          // calculate the distances to the floor normalized to [0,1]
-          // for the bilinear interpolation
-          tmp_0 = (x_pr0 - (i0_floor * voxsize0 + img_origin0)) / voxsize0;
-          tmp_2 = (x_pr2 - (i2_floor * voxsize2 + img_origin2)) / voxsize2;
-
-          if ((i0_floor >= 0) && (i0_floor < n0) && (i2_floor >= 0) && (i2_floor < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0_floor + n2 * i1 + i2_floor, (p[i] * (1 - tmp_0) * (1 - tmp_2) * cf));
-          }
-          if ((i0_ceil >= 0) && (i0_ceil < n0) && (i2_floor >= 0) && (i2_floor < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0_ceil + n2 * i1 + i2_floor, (p[i] * tmp_0 * (1 - tmp_2) * cf));
-          }
-          if ((i0_floor >= 0) && (i0_floor < n0) && (i2_ceil >= 0) && (i2_ceil < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0_floor + n2 * i1 + i2_ceil, (p[i] * (1 - tmp_0) * tmp_2 * cf));
-          }
-          if ((i0_ceil >= 0) && (i0_ceil < n0) && (i2_ceil >= 0) && (i2_ceil < n2))
-          {
-            atomic_sum(img + n1 * n2 * i0_ceil + n2 * i1 + i2_ceil, (p[i] * tmp_0 * tmp_2 * cf));
-          }
+          i0_f = (x_pr0 - img_origin0) / voxsize0;
+          i2_f = (x_pr2 - img_origin2) / voxsize2;
+          bilinear_interp_adj_fixed1(img, n0, n1, n2, i0_f, i1, i2_f, p[i] * cf);
         }
       }
       //---------------------------------------------------------------------------------
@@ -337,33 +287,9 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
           x_pr0 = xstart0 + (img_origin2 + i2 * voxsize2 - xstart2) * d0 / d2;
           x_pr1 = xstart1 + (img_origin2 + i2 * voxsize2 - xstart2) * d1 / d2;
 
-          i0_floor = (int)floor((x_pr0 - img_origin0) / voxsize0);
-          i0_ceil = i0_floor + 1;
-
-          i1_floor = (int)floor((x_pr1 - img_origin1) / voxsize1);
-          i1_ceil = i1_floor + 1;
-
-          // calculate the distances to the floor normalized to [0,1]
-          // for the bilinear interpolation
-          tmp_0 = (x_pr0 - (i0_floor * voxsize0 + img_origin0)) / voxsize0;
-          tmp_1 = (x_pr1 - (i1_floor * voxsize1 + img_origin1)) / voxsize1;
-
-          if ((i0_floor >= 0) && (i0_floor < n0) && (i1_floor >= 0) && (i1_floor < n1))
-          {
-            atomic_sum(img + n1 * n2 * i0_floor + n2 * i1_floor + i2, (p[i] * (1 - tmp_0) * (1 - tmp_1) * cf));
-          }
-          if ((i0_ceil >= 0) && (i0_ceil < n0) && (i1_floor >= 0) && (i1_floor < n1))
-          {
-            atomic_sum(img + n1 * n2 * i0_ceil + n2 * i1_floor + i2, (p[i] * tmp_0 * (1 - tmp_1) * cf));
-          }
-          if ((i0_floor >= 0) && (i0_floor < n0) && (i1_ceil >= 0) && (i1_ceil < n1))
-          {
-            atomic_sum(img + n1 * n2 * i0_floor + n2 * i1_ceil + i2, (p[i] * (1 - tmp_0) * tmp_1 * cf));
-          }
-          if ((i0_ceil >= 0) && (i0_ceil < n0) && (i1_ceil >= 0) && (i1_ceil < n1))
-          {
-            atomic_sum(img + n1 * n2 * i0_ceil + n2 * i1_ceil + i2, (p[i] * tmp_0 * tmp_1 * cf));
-          }
+          i0_f = (x_pr0 - img_origin0) / voxsize0;
+          i1_f = (x_pr1 - img_origin1) / voxsize1;
+          bilinear_interp_adj_fixed2(img, n0, n1, n2, i0_f, i1_f, i2, p[i] * cf);
         }
       }
     }
