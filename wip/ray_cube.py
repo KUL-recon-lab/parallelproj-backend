@@ -2,6 +2,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from numpy.typing import NDArray
+
 
 def draw_plane_bbox(ax, direction=2, position=0.5, bound=(-10, 10), color="green"):
     """Draws the bounding box (edges) of a 2D plane in 3D space with correct corner order."""
@@ -21,16 +23,45 @@ def draw_plane_bbox(ax, direction=2, position=0.5, bound=(-10, 10), color="green
     ax.plot(corners[:, 0], corners[:, 1], corners[:, 2], color=color)
 
 
-def ray_cube_intersection(xstart, xend, img_origin, voxsize, img_dim):
+def ray_cube_intersection(
+    xstart: NDArray[np.float64],
+    xend: NDArray[np.float64],
+    img_origin: NDArray[np.float64],
+    voxsize: NDArray[np.float64],
+    img_dim: NDArray[np.int32],
+) -> tuple[int, float, int, int]:
+    """ray cube intersection function for Joseph projector
 
+    Parameters
+    ----------
+    xstart : NDArray[np.float64]
+        3 element array with the starting point of the ray
+    xend : NDArray[np.float64]
+        3 element array with the end point of the ray
+    img_origin : NDArray[np.float64]
+        3 element array with the origin of the image volume (world coordinates of 0,0,0 voxel)
+    voxsize : NDArray[np.float64]
+        3 element array with the size of the voxels in world coordinates
+    img_dim : NDArray[np.int32]
+        3 element array with the dimensions of the image volume
+
+    Returns
+    -------
+    tuple[int, float, int, int]
+        direction of the ray (0, 1, or 2), correction factor, start plane, end plane
+    """
+
+    # get the bounding box of the image volume (outside of all voxels)
     boxmin = img_origin - 0.5 * voxsize
     boxmax = boxmin + img_dim * voxsize
 
+    # get the direction and inverse direction of the ray
     dr = xend - xstart
     inv_dr = 1 / dr
 
+    # check if the ray intersects the bounding box
     tmin = 0.0
-    tmax = np.inf
+    tmax = 1.0
 
     for i in range(3):
         t1 = (boxmin[i] - xstart[i]) * inv_dr[i]
@@ -39,7 +70,8 @@ def ray_cube_intersection(xstart, xend, img_origin, voxsize, img_dim):
         tmin = max(tmin, min(t1, t2))
         tmax = min(tmax, max(t1, t2))
 
-    # additional calculations useful for the joseph projector
+    # if tmin < tmax, then the ray intersects the bounding box
+    # we do a few additional calculations to things that are useful for the joseph projector
     dr_sq = dr**2
     cos_sq = dr_sq / np.sum(dr_sq)
 
@@ -49,9 +81,6 @@ def ray_cube_intersection(xstart, xend, img_origin, voxsize, img_dim):
     correction_factor: float = float(voxsize[direction]) / float(
         np.sqrt(cos_sq[direction])
     )
-
-    if tmax > 1:
-        tmax = 1.0
 
     start_plane = -1
     end_plane = -1
@@ -75,8 +104,8 @@ def ray_cube_intersection(xstart, xend, img_origin, voxsize, img_dim):
 
 if __name__ == "__main__":
 
-    xstart = np.array([1.0, -8.0, 2.0])
-    xend = np.array([1.0, 8.0, -2.0])
+    xstart = np.array([3.0, -8.0, 2.0])
+    xend = np.array([3.0, 0.5, -2.0])
 
     voxsize = np.array([2.0, 3.0, 1.0])
     img_dim = np.array([4, 3, 7])
