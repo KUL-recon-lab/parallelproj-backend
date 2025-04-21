@@ -20,30 +20,16 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
   int n1 = img_dim[1];
   int n2 = img_dim[2];
 
-  float voxsize0 = voxsize[0];
-  float voxsize1 = voxsize[1];
-  float voxsize2 = voxsize[2];
-
-  float img_origin0 = img_origin[0];
-  float img_origin1 = img_origin[1];
-  float img_origin2 = img_origin[2];
-
   int direction;
   int i0, i1, i2;
   float i0_f, i1_f, i2_f;
-  float x_pr0, x_pr1, x_pr2;
   float cf;
 
-  float xstart0 = xstart[i * 3 + 0];
-  float xstart1 = xstart[i * 3 + 1];
-  float xstart2 = xstart[i * 3 + 2];
+  float a0, a1, a2;
+  float b0, b1, b2;
 
   int istart = -1;
   int iend = -1;
-
-  float d0 = xend[i * 3 + 0] - xstart0;
-  float d1 = xend[i * 3 + 1] - xstart1;
-  float d2 = xend[i * 3 + 2] - xstart2;
 
   // test whether the ray intersects the image cube
   // if it does not, istart and iend are set to -1
@@ -53,45 +39,94 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
   // cf is the correction factor voxsize[dir]/cos[dir]
   ray_cube_intersection_joseph(xstart + 3 * i, xend + 3 * i, img_origin, voxsize, img_dim, direction, cf, istart, iend);
 
+  // if the ray does not intersect the image cube, return
+  // istart and iend are set to -1
+  if (istart == -1)
+  {
+    return;
+  }
+
   float val = cf * p[i];
 
-  if (direction == 0 && istart != -1)
+  if (direction == 0)
   {
+    b1 = ((xstart[3 * i + 1] - img_origin[1]) / voxsize[1]) +
+         (img_origin[0] - xstart[3 * i + 0]) * (xend[3 * i + 1] - xstart[3 * i + 1]) /
+             (voxsize[1] * (xend[3 * i + 0] - xstart[3 * i + 0]));
+
+    a1 = voxsize[0] * (xend[3 * i + 1] - xstart[3 * i + 1]) /
+         voxsize[1] * (xend[3 * i + 0] - xstart[3 * i + 0]);
+
+    b2 = ((xstart[3 * i + 2] - img_origin[2]) / voxsize[2]) +
+         (img_origin[0] - xstart[3 * i + 0]) * (xend[3 * i + 2] - xstart[3 * i + 2]) /
+             (voxsize[2] * (xend[3 * i + 0] - xstart[3 * i + 0]));
+
+    a2 = voxsize[0] * (xend[3 * i + 2] - xstart[3 * i + 2]) /
+         voxsize[2] * (xend[3 * i + 0] - xstart[3 * i + 0]);
+
+    // get the intersection points of the ray and the start image plane in voxel coordinates
+    i1_f = istart * a1 + b1;
+    i2_f = istart * a2 + b2;
+
     for (i0 = istart; i0 <= iend; ++i0)
     {
-      // get the indices where the ray intersects the image plane
-      x_pr1 = xstart1 + (img_origin0 + i0 * voxsize0 - xstart0) * d1 / d0;
-      x_pr2 = xstart2 + (img_origin0 + i0 * voxsize0 - xstart0) * d2 / d0;
-
-      i1_f = (x_pr1 - img_origin1) / voxsize1;
-      i2_f = (x_pr2 - img_origin2) / voxsize2;
       bilinear_interp_adj_fixed0(img, n0, n1, n2, i0, i1_f, i2_f, val);
+      i1_f += a1;
+      i2_f += a2;
     }
   }
-  else if (direction == 1 && istart != -1)
+  else if (direction == 1)
   {
+    b0 = ((xstart[3 * i + 0] - img_origin[0]) / voxsize[0]) +
+         (img_origin[1] - xstart[3 * i + 1]) * (xend[3 * i + 0] - xstart[3 * i + 0]) /
+             (voxsize[0] * (xend[3 * i + 1] - xstart[3 * i + 1]));
+
+    a0 = voxsize[1] * (xend[3 * i + 0] - xstart[3 * i + 0]) /
+         voxsize[0] * (xend[3 * i + 1] - xstart[3 * i + 1]);
+
+    b2 = ((xstart[3 * i + 2] - img_origin[2]) / voxsize[2]) +
+         (img_origin[1] - xstart[3 * i + 1]) * (xend[3 * i + 2] - xstart[3 * i + 2]) /
+             (voxsize[2] * (xend[3 * i + 1] - xstart[3 * i + 1]));
+
+    a2 = voxsize[1] * (xend[3 * i + 2] - xstart[3 * i + 2]) /
+         voxsize[2] * (xend[3 * i + 1] - xstart[3 * i + 1]);
+
+    // get the intersection points of the ray and the start image plane in voxel coordinates
+    i0_f = istart * a0 + b0;
+    i2_f = istart * a2 + b2;
+
     for (i1 = istart; i1 <= iend; ++i1)
     {
-      // get the indices where the ray intersects the image plane
-      x_pr0 = xstart0 + (img_origin1 + i1 * voxsize1 - xstart1) * d0 / d1;
-      x_pr2 = xstart2 + (img_origin1 + i1 * voxsize1 - xstart1) * d2 / d1;
-
-      i0_f = (x_pr0 - img_origin0) / voxsize0;
-      i2_f = (x_pr2 - img_origin2) / voxsize2;
       bilinear_interp_adj_fixed1(img, n0, n1, n2, i0_f, i1, i2_f, val);
+      i0_f += a0;
+      i2_f += a2;
     }
   }
-  else if (direction == 2 && istart != -1)
+  else if (direction == 2)
   {
+    b0 = ((xstart[3 * i + 0] - img_origin[0]) / voxsize[0]) +
+         (img_origin[2] - xstart[3 * i + 2]) * (xend[3 * i + 0] - xstart[3 * i + 0]) /
+             (voxsize[0] * (xend[3 * i + 2] - xstart[3 * i + 2]));
+
+    a0 = voxsize[1] * (xend[3 * i + 2] - xstart[3 * i + 2]) /
+         voxsize[2] * (xend[3 * i + 1] - xstart[3 * i + 1]);
+
+    b1 = ((xstart[3 * i + 1] - img_origin[1]) / voxsize[1]) +
+         (img_origin[2] - xstart[3 * i + 2]) * (xend[3 * i + 1] - xstart[3 * i + 1]) /
+             (voxsize[1] * (xend[3 * i + 2] - xstart[3 * i + 2]));
+
+    a1 = voxsize[2] * (xend[3 * i + 1] - xstart[3 * i + 1]) /
+         voxsize[1] * (xend[3 * i + 2] - xstart[3 * i + 2]);
+
+    // get the intersection points of the ray and the start image plane in voxel coordinates
+    i0_f = istart * a0 + b0;
+    i1_f = istart * a1 + b1;
+
     for (i2 = istart; i2 <= iend; ++i2)
     {
-      // get the indices where the ray intersects the image plane
-      x_pr0 = xstart0 + (img_origin2 + i2 * voxsize2 - xstart2) * d0 / d2;
-      x_pr1 = xstart1 + (img_origin2 + i2 * voxsize2 - xstart2) * d1 / d2;
-
-      i0_f = (x_pr0 - img_origin0) / voxsize0;
-      i1_f = (x_pr1 - img_origin1) / voxsize1;
       bilinear_interp_adj_fixed2(img, n0, n1, n2, i0_f, i1_f, i2, val);
+      i0_f += a0;
+      i1_f += a1;
     }
   }
 }
