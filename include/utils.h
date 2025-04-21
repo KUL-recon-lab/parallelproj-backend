@@ -3,6 +3,10 @@
 #include "cuda_compat.h"
 #include "utils.h" // for atomic_sum
 
+#ifndef __CUDACC__
+#include <math.h>
+#endif
+
 WORKER_QUALIFIER inline void atomic_sum(float *target, float value)
 {
 #ifdef __CUDACC__
@@ -13,92 +17,123 @@ WORKER_QUALIFIER inline void atomic_sum(float *target, float value)
 #endif
 }
 
-WORKER_QUALIFIER inline unsigned char ray_cube_intersection(float orig0,
-                                                            float orig1,
-                                                            float orig2,
-                                                            float bounds0_min,
-                                                            float bounds1_min,
-                                                            float bounds2_min,
-                                                            float bounds0_max,
-                                                            float bounds1_max,
-                                                            float bounds2_max,
-                                                            float rdir0,
-                                                            float rdir1,
-                                                            float rdir2,
-                                                            float *t1,
-                                                            float *t2)
+/**
+ * @brief Ray/cube intersection + Joseph-specific parameters:
+ *   - principal axis (0,1,2)
+ *   - correction factor
+ *   - start/end plane indices
+ *
+ * Implements the IEEE-754 slab method using fminf/fmaxf to handle +/-0 & inf.
+ * Compiles under CUDA (__device__) and standard C++ compilers.
+ *
+ * If no intersection occurs, `direction` is set to -1 and all outputs
+ * (correction, start_plane, end_plane) are reset to defaults.
+ * Otherwise fills outputs appropriately.
+ *
+ * @param xstart       Ray origin (length-3)
+ * @param xend         Ray end point (length-3)
+ * @param img_origin   World coords of center of voxel (0,0,0)
+ * @param voxsize      Voxel sizes (length-3)
+ * @param img_dim      Image dimensions [n0,n1,n2]
+ * @param[out] direction   Principal axis (0,1,2)
+ * @param[out] correction  Correction factor = voxsize[dir]/cos[dir]
+ * @param[out] start_plane First plane index to traverse, or -1 if no intersection
+ * @param[out] end_plane   Last plane index to traverse, or -1 if no intersection
+ */
+WORKER_QUALIFIER inline void ray_cube_intersection_joseph(
+    const float *xstart,
+    const float *xend,
+    const float *img_origin,
+    const float *voxsize,
+    const int *img_dim,
+    int &direction,
+    float &correction,
+    int &start_plane,
+    int &end_plane)
 {
-  // the inverse of the directional vector
-  // using the inverse of the directional vector and IEEE floating point arith standard 754
-  // makes sure that 0's in the directional vector are handled correctly
-  float invdir0 = 1.f / rdir0;
-  float invdir1 = 1.f / rdir1;
-  float invdir2 = 1.f / rdir2;
 
-  unsigned char intersec = 1;
+  // default values - assume no intersection
+  direction = 0;
+  correction = 1.0f;
+  start_plane = -1;
+  end_plane = -1;
 
-  float t11, t12, t21, t22;
-
-  if (invdir0 >= 0)
+  // build box bounds: outer faces
+  float box_min[3], box_max[3];
+  for (int k = 0; k < 3; ++k)
   {
-    *t1 = (bounds0_min - orig0) * invdir0;
-    *t2 = (bounds0_max - orig0) * invdir0;
-  }
-  else
-  {
-    *t1 = (bounds0_max - orig0) * invdir0;
-    *t2 = (bounds0_min - orig0) * invdir0;
+    box_min[k] = img_origin[k] - 0.5f * voxsize[k];
+    box_max[k] = box_min[k] + img_dim[k] * voxsize[k];
   }
 
-  if (invdir1 >= 0)
+  // ray vector and its inverse
+  float dr[3], inv_dr[3];
+  for (int k = 0; k < 3; ++k)
   {
-    t11 = (bounds1_min - orig1) * invdir1;
-    t12 = (bounds1_max - orig1) * invdir1;
-  }
-  else
-  {
-    t11 = (bounds1_max - orig1) * invdir1;
-    t12 = (bounds1_min - orig1) * invdir1;
+    dr[k] = xend[k] - xstart[k];
+    inv_dr[k] = 1.0f / dr[k];
   }
 
-  if ((*t1 > t12) || (t11 > *t2))
+  // slab intersection, parameter t in [0,1]
+  float tmin = 0.0f;
+  float tmax = 1.0f;
+  for (int k = 0; k < 3; ++k)
   {
-    intersec = 0;
-  }
-  if (t11 > *t1)
-  {
-    *t1 = t11;
-  }
-  if (t12 < *t2)
-  {
-    *t2 = t12;
-  }
-
-  if (invdir2 >= 0)
-  {
-    t21 = (bounds2_min - orig2) * invdir2;
-    t22 = (bounds2_max - orig2) * invdir2;
-  }
-  else
-  {
-    t21 = (bounds2_max - orig2) * invdir2;
-    t22 = (bounds2_min - orig2) * invdir2;
+    float t1 = (box_min[k] - xstart[k]) * inv_dr[k];
+    float t2 = (box_max[k] - xstart[k]) * inv_dr[k];
+    // use fminf/fmaxf for IEEE-754 compliance
+    tmin = fmaxf(tmin, fminf(t1, t2));
+    tmax = fminf(tmax, fmaxf(t1, t2));
   }
 
-  if ((*t1 > t22) || (t21 > *t2))
+  if (tmax < tmin)
   {
-    intersec = 0;
-  }
-  if (t21 > *t1)
-  {
-    *t1 = t21;
-  }
-  if (t22 < *t2)
-  {
-    *t2 = t22;
+    // no intersection - direction = 0, start_plane = -1, end_plane = -1
+    // correction = 1.0f, all set by default
+    return;
   }
 
-  return (intersec);
+  // principal axis & correction
+  float dr_sq[3] = {dr[0] * dr[0], dr[1] * dr[1], dr[2] * dr[2]};
+  float sum_sq = dr_sq[0] + dr_sq[1] + dr_sq[2];
+  // compute squared cosines
+  float cos_sq[3] = {dr_sq[0] / sum_sq, dr_sq[1] / sum_sq, dr_sq[2] / sum_sq};
+
+  // choose principal axis based on max squared cosine
+  direction = 0;
+  if (cos_sq[1] >= cos_sq[0] && cos_sq[1] >= cos_sq[2])
+    direction = 1;
+  else if (cos_sq[2] >= cos_sq[0] && cos_sq[2] >= cos_sq[1])
+    direction = 2;
+
+  // compute correction factor
+  correction = voxsize[direction] / sqrtf(cos_sq[direction]);
+
+  // get the first and last voxel planes that are intersected
+  // computer the ray cube intersection points
+  // note that if xstart or xend are inside the cube, these are xstart / xend
+  float xi1 = xstart[direction] + tmin * dr[direction];
+  float xi2 = xstart[direction] + tmax * dr[direction];
+
+  // floating point plane values
+  float f1 = (xi1 - img_origin[direction]) / voxsize[direction];
+  float f2 = (xi2 - img_origin[direction]) / voxsize[direction];
+
+  // if the integer part of f1 and f2 are the same, we are inside one voxel plane
+  if ((int)f1 != (int)f2)
+  {
+    if (f1 > f2)
+    {
+      float tmp = f1;
+      f1 = f2;
+      f2 = tmp;
+    }
+    // first full plane floor(f1)+1
+    // ceil(f1) is not completely correct in case f1 is an integer
+    start_plane = (int)floorf(f1) + 1;
+    // last full plane is floor(exit)
+    end_plane = (int)floorf(f2);
+  }
 }
 
 /**

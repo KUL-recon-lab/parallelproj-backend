@@ -2,11 +2,6 @@
 #include "cuda_compat.h"
 #include "utils.h"
 
-// we need to import math.h for the floor, ceil, sqrtf if not compiling for CUDA
-#ifndef __CUDACC__
-#include <math.h>
-#endif
-
 WORKER_QUALIFIER inline void joseph3d_fwd_worker(size_t i,
                                                  const float *xstart,
                                                  const float *xend,
@@ -21,22 +16,15 @@ WORKER_QUALIFIER inline void joseph3d_fwd_worker(size_t i,
   int n1 = img_dim[1];
   int n2 = img_dim[2];
 
-  float d0, d1, d2, d0_sq, d1_sq, d2_sq;
-  float lsq, cos0_sq, cos1_sq, cos2_sq;
-  unsigned short direction;
+  int direction;
   int i0, i1, i2;
   float i0_f, i1_f, i2_f;
   float x_pr0, x_pr1, x_pr2;
-
-  float toAdd, cf;
+  float cf;
 
   float xstart0 = xstart[i * 3 + 0];
   float xstart1 = xstart[i * 3 + 1];
   float xstart2 = xstart[i * 3 + 2];
-
-  float xend0 = xend[i * 3 + 0];
-  float xend1 = xend[i * 3 + 1];
-  float xend2 = xend[i * 3 + 2];
 
   float voxsize0 = voxsize[0];
   float voxsize1 = voxsize[1];
@@ -46,259 +34,66 @@ WORKER_QUALIFIER inline void joseph3d_fwd_worker(size_t i,
   float img_origin1 = img_origin[1];
   float img_origin2 = img_origin[2];
 
-  unsigned char intersec;
-  float t1, t2;
-  float istart_f, iend_f, tmp;
-  int istart, iend;
+  int istart = -1;
+  int iend = -1;
 
-  // test whether the ray between the two detectors is most parallel
-  // with the 0, 1, or 2 axis
-  d0 = xend0 - xstart0;
-  d1 = xend1 - xstart1;
-  d2 = xend2 - xstart2;
+  float d0 = xend[i * 3 + 0] - xstart0;
+  float d1 = xend[i * 3 + 1] - xstart1;
+  float d2 = xend[i * 3 + 2] - xstart2;
 
-  //-----------
-  //--- test whether ray and cube intersect
-  intersec = ray_cube_intersection(xstart0, xstart1, xstart2,
-                                   img_origin0 - 1 * voxsize0, img_origin1 - 1 * voxsize1, img_origin2 - 1 * voxsize2,
-                                   img_origin0 + n0 * voxsize0, img_origin1 + n1 * voxsize1, img_origin2 + n2 * voxsize2,
-                                   d0, d1, d2, &t1, &t2);
+  // test whether the ray intersects the image cube
+  // if it does not, istart and iend are set to -1
+  // if it does, direction is set to the principal axis
+  // and istart and iend are set to the first and last voxel planes
+  // that are intersected
+  // cf is the correction factor voxsize[dir]/cos[dir]
+  ray_cube_intersection_joseph(xstart + 3 * i, xend + 3 * i, img_origin, voxsize, img_dim, direction, cf, istart, iend);
 
-  if (intersec == 1)
+  p[i] = 0.0f;
+
+  if (direction == 0 && istart != -1)
   {
-    d0_sq = d0 * d0;
-    d1_sq = d1 * d1;
-    d2_sq = d2 * d2;
-
-    lsq = d0_sq + d1_sq + d2_sq;
-
-    cos0_sq = d0_sq / lsq;
-    cos1_sq = d1_sq / lsq;
-    cos2_sq = d2_sq / lsq;
-
-    direction = 0;
-    if ((cos1_sq >= cos0_sq) && (cos1_sq >= cos2_sq))
+    for (i0 = istart; i0 <= iend; ++i0)
     {
-      direction = 1;
+      // get the indices where the ray intersects the image plane
+      x_pr1 = xstart1 + (img_origin0 + i0 * voxsize0 - xstart0) * d1 / d0;
+      x_pr2 = xstart2 + (img_origin0 + i0 * voxsize0 - xstart0) * d2 / d0;
+
+      i1_f = (x_pr1 - img_origin1) / voxsize1;
+      i2_f = (x_pr2 - img_origin2) / voxsize2;
+
+      p[i] += bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
     }
-    else
+    p[i] *= cf;
+  }
+  else if (direction == 1 && istart != -1)
+  {
+    for (i1 = istart; i1 <= iend; ++i1)
     {
-      if ((cos2_sq >= cos0_sq) && (cos2_sq >= cos1_sq))
-      {
-        direction = 2;
-      }
-    }
+      // get the indices where the ray intersects the image plane
+      x_pr0 = xstart0 + (img_origin1 + i1 * voxsize1 - xstart1) * d0 / d1;
+      x_pr2 = xstart2 + (img_origin1 + i1 * voxsize1 - xstart1) * d2 / d1;
 
-    if (direction == 0)
+      i0_f = (x_pr0 - img_origin0) / voxsize0;
+      i2_f = (x_pr2 - img_origin2) / voxsize2;
+
+      p[i] += bilinear_interp_fixed1(img, n0, n1, n2, i0_f, i1, i2_f);
+    }
+    p[i] *= cf;
+  }
+  else if (direction == 2 && istart != -1)
+  {
+    for (i2 = istart; i2 <= iend; ++i2)
     {
-      cf = voxsize0 / sqrtf(cos0_sq);
+      // get the indices where the ray intersects the image plane
+      x_pr0 = xstart0 + (img_origin2 + i2 * voxsize2 - xstart2) * d0 / d2;
+      x_pr1 = xstart1 + (img_origin2 + i2 * voxsize2 - xstart2) * d1 / d2;
 
-      // case where ray is most parallel to the 0 axis
-      // we step through the volume along the 0 direction
+      i0_f = (x_pr0 - img_origin0) / voxsize0;
+      i1_f = (x_pr1 - img_origin1) / voxsize1;
 
-      //--- check where ray enters / leaves cube
-      istart_f = (xstart0 + t1 * d0 - img_origin0) / voxsize0;
-      iend_f = (xstart0 + t2 * d0 - img_origin0) / voxsize0;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      istart = (int)floor(istart_f);
-      iend = (int)ceil(iend_f);
-
-      if (istart < 0)
-      {
-        istart = 0;
-      }
-      if (iend >= n0)
-      {
-        iend = n0;
-      }
-
-      // check in which "plane" the start and end points are
-      // we have to do this to avoid that we include voxels
-      // that are "outside" the line segment bewteen xstart and xend
-
-      // !! for these calculations we overwrite the istart_f and iend_f variables !!
-      istart_f = (xstart0 - img_origin0) / voxsize0;
-      iend_f = (xend0 - img_origin0) / voxsize0;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      if (istart < (int)floor(istart_f))
-      {
-        istart = (int)floor(istart_f);
-      }
-      if (iend >= (int)ceil(iend_f))
-      {
-        iend = (int)ceil(iend_f);
-      }
-      //---
-
-      for (i0 = istart; i0 < iend; i0++)
-      {
-        // get the indices where the ray intersects the image plane
-        x_pr1 = xstart1 + (img_origin0 + i0 * voxsize0 - xstart0) * d1 / d0;
-        x_pr2 = xstart2 + (img_origin0 + i0 * voxsize0 - xstart0) * d2 / d0;
-
-        i1_f = (x_pr1 - img_origin1) / voxsize1;
-        i2_f = (x_pr2 - img_origin2) / voxsize2;
-
-        toAdd = bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
-
-        p[i] += (cf * toAdd);
-      }
+      p[i] += bilinear_interp_fixed2(img, n0, n1, n2, i0_f, i1_f, i2);
     }
-
-    //---------------------------------------------------------------------------------
-    if (direction == 1)
-    {
-      cf = voxsize1 / sqrtf(cos1_sq);
-
-      // case where ray is most parallel to the 1 axis
-      // we step through the volume along the 1 direction
-
-      //--- check where ray enters / leaves cube
-      istart_f = (xstart1 + t1 * d1 - img_origin1) / voxsize1;
-      iend_f = (xstart1 + t2 * d1 - img_origin1) / voxsize1;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      istart = (int)floor(istart_f);
-      iend = (int)ceil(iend_f);
-
-      if (istart < 0)
-      {
-        istart = 0;
-      }
-      if (iend >= n1)
-      {
-        iend = n1;
-      }
-
-      // check in which "plane" the start and end points are
-      // we have to do this to avoid that we include voxels
-      // that are "outside" the line segment bewteen xstart and xend
-
-      // !! for these calculations we overwrite the istart_f and iend_f variables !!
-      istart_f = (xstart1 - img_origin1) / voxsize1;
-      iend_f = (xend1 - img_origin1) / voxsize1;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      if (istart < (int)floor(istart_f))
-      {
-        istart = (int)floor(istart_f);
-      }
-      if (iend >= (int)ceil(iend_f))
-      {
-        iend = (int)ceil(iend_f);
-      }
-      //---
-
-      for (i1 = istart; i1 < iend; i1++)
-      {
-        // get the indices where the ray intersects the image plane
-        x_pr0 = xstart0 + (img_origin1 + i1 * voxsize1 - xstart1) * d0 / d1;
-        x_pr2 = xstart2 + (img_origin1 + i1 * voxsize1 - xstart1) * d2 / d1;
-
-        i0_f = (x_pr0 - img_origin0) / voxsize0;
-        i2_f = (x_pr2 - img_origin2) / voxsize2;
-
-        toAdd = bilinear_interp_fixed1(img, n0, n1, n2, i0_f, i1, i2_f);
-
-        p[i] += (cf * toAdd);
-      }
-    }
-
-    //---------------------------------------------------------------------------------
-    if (direction == 2)
-    {
-      cf = voxsize2 / sqrtf(cos2_sq);
-
-      // case where ray is most parallel to the 2 axis
-      // we step through the volume along the 2 direction
-
-      //--- check where ray enters / leaves cube
-      istart_f = (xstart2 + t1 * d2 - img_origin2) / voxsize2;
-      iend_f = (xstart2 + t2 * d2 - img_origin2) / voxsize2;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      istart = (int)floor(istart_f);
-      iend = (int)ceil(iend_f);
-
-      if (istart < 0)
-      {
-        istart = 0;
-      }
-      if (iend >= n2)
-      {
-        iend = n2;
-      }
-
-      // check in which "plane" the start and end points are
-      // we have to do this to avoid that we include voxels
-      // that are "outside" the line segment bewteen xstart and xend
-
-      // !! for these calculations we overwrite the istart_f and iend_f variables !!
-      istart_f = (xstart2 - img_origin2) / voxsize2;
-      iend_f = (xend2 - img_origin2) / voxsize2;
-
-      if (istart_f > iend_f)
-      {
-        tmp = iend_f;
-        iend_f = istart_f;
-        istart_f = tmp;
-      }
-
-      if (istart < (int)floor(istart_f))
-      {
-        istart = (int)floor(istart_f);
-      }
-      if (iend >= (int)ceil(iend_f))
-      {
-        iend = (int)ceil(iend_f);
-      }
-      //---
-
-      for (i2 = istart; i2 < iend; i2++)
-      {
-        // get the indices where the ray intersects the image plane
-        x_pr0 = xstart0 + (img_origin2 + i2 * voxsize2 - xstart2) * d0 / d2;
-        x_pr1 = xstart1 + (img_origin2 + i2 * voxsize2 - xstart2) * d1 / d2;
-
-        i0_f = (x_pr0 - img_origin0) / voxsize0;
-        i1_f = (x_pr1 - img_origin1) / voxsize1;
-
-        toAdd = bilinear_interp_fixed2(img, n0, n1, n2, i0_f, i1_f, i2);
-
-        p[i] += (cf * toAdd);
-      }
-    }
+    p[i] *= cf;
   }
 }
