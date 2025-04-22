@@ -114,16 +114,16 @@ if(USE_CUDA)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
-    set(TEST_SOURCES
-        tests/test_ray_cube_intersection.cpp
-        tests/test_ray_cube_intersection_cuda.cu
-        tests/test_bilinear_interp.cpp
-        tests/test_bilinear_interp_cuda.cu
-        tests/test_bilinear_interp_adj.cpp
-        tests/test_bilinear_interp_adj_cuda.cu
-        tests/test_nontof_fwd_back.cpp
-        tests/test_nontof_fwd_back_cuda.cu
-    )
+    #set(TEST_SOURCES
+    #    tests/test_ray_cube_intersection.cpp
+    #    tests/test_ray_cube_intersection_cuda.cu
+    #    tests/test_bilinear_interp.cpp
+    #    tests/test_bilinear_interp_cuda.cu
+    #    tests/test_bilinear_interp_adj.cpp
+    #    tests/test_bilinear_interp_adj_cuda.cu
+    #    tests/test_nontof_fwd_back.cpp
+    #    tests/test_nontof_fwd_back_cuda.cu
+    #)
 else()
     message(STATUS "CUDA build disabled.")
 
@@ -140,12 +140,6 @@ else()
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=0)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
-    set(TEST_SOURCES
-        tests/test_ray_cube_intersection.cpp
-        tests/test_bilinear_interp.cpp
-        tests/test_bilinear_interp_adj.cpp
-        tests/test_nontof_fwd_back.cpp
-    )
 endif()
 
 target_include_directories(parallelproj
@@ -215,6 +209,26 @@ endif()
 
 if(BUILD_TESTS)
     enable_testing()
+
+    set(TEST_SOURCES
+        tests/test_ray_cube_intersection.cpp
+        tests/test_bilinear_interp.cpp
+        tests/test_bilinear_interp_adj.cpp
+        tests/test_nontof_fwd_back.cpp
+    )
+
+    if(USE_CUDA)
+        # for each test in TEST_SOURCES append the cuda one by replacing .cpp with _cuda.cu
+        foreach(TEST_SOURCE ${TEST_SOURCES})
+            get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+            set(CUDA_TEST_SOURCE ${CMAKE_SOURCE_DIR}/tests/${TEST_NAME}_cuda.cu)
+            if(EXISTS ${CUDA_TEST_SOURCE})
+                list(APPEND TEST_SOURCES ${CUDA_TEST_SOURCE})
+            else()
+                message(WARNING "CUDA test source not found: ${CUDA_TEST_SOURCE}")
+            endif()
+        endforeach()
+    endif()
 
     set(TEST_DATA_DIR ${CMAKE_SOURCE_DIR}/tests)
 
