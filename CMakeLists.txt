@@ -116,6 +116,7 @@ if(USE_CUDA)
 
     set(TEST_SOURCES
         tests/test_ray_cube_intersection.cpp
+        tests/test_ray_cube_intersection_cuda.cu
         tests/test_bilinear_interp.cpp
         tests/test_bilinear_interp_cuda.cu
         tests/test_bilinear_interp_adj.cpp
