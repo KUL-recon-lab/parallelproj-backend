@@ -158,6 +158,34 @@ if __name__ == "__main__":
             2,  # expected_end_plane
             2,  # expected_direction
         ),
+        (
+            np.array([0.0, 0.0, -14.0]),  # xstart
+            np.array([0.0, 0.0, 1.0]),  # xend
+            0,  # expected_start_plane
+            1,  # expected_end_plane
+            2,  # expected_direction
+        ),
+        (
+            np.array([0.0, 0.0, 1.0]),  # xstart
+            np.array([0.0, 0.0, 14.0]),  # xend
+            2,  # expected_start_plane
+            2,  # expected_end_plane
+            2,  # expected_direction
+        ),
+        (
+            np.array([-14.0, -14.0, -14.0]),  # xstart
+            np.array([0.0, 0.0, 1.0]),  # xend
+            0,  # expected_start_plane
+            1,  # expected_end_plane
+            2,  # expected_direction
+        ),
+        (
+            np.array([-15.1, -14.0, -14.0]),  # xstart
+            np.array([0.0, 0.0, 1.0]),  # xend
+            0,  # expected_start_plane
+            2,  # expected_end_plane
+            0,  # expected_direction
+        ),
     ]
 
     for (
