@@ -104,72 +104,144 @@ def ray_cube_intersection(
 
 if __name__ == "__main__":
 
-    xstart = np.array([3.0, -8.0, 2.0])
-    xend = np.array([3.0, 0.5, -2.0])
+    voxsize = np.array([2.0, 1.0, 4.0])
+    img_dim = np.array([6, 12, 3])
+    img_origin = -voxsize * img_dim / 2 + 0.5 * voxsize + 1
 
-    voxsize = np.array([2.0, 3.0, 1.0])
-    img_dim = np.array([4, 3, 7])
-    img_origin = np.array([-3.0, -4.0, -3.5])
+    test_cases = [
+        (
+            np.array([-14.0, 0.0, 0.0]),  # xstart
+            np.array([14.0, 0.0, 0.0]),  # xend
+            0,  # expected_start_plane
+            5,  # expected_end_plane
+            0,  # expected_direction
+        ),
+        (
+            np.array([14.0, 0.0, 0.0]),  # xstart
+            np.array([-14.0, 0.0, 0.0]),  # xend
+            0,  # expected_start_plane
+            5,  # expected_end_plane
+            0,  # expected_direction
+        ),
+        (
+            np.array([-14.0, 0.0, 0.0]),  # xstart
+            np.array([2.0, 0.0, 0.0]),  # xend
+            0,  # expected_start_plane
+            3,  # expected_end_plane
+            0,  # expected_direction
+        ),
+        (
+            np.array([2.0, 0.0, 0.0]),  # xstart
+            np.array([14.0, 0.0, 0.0]),  # xend
+            4,  # expected_start_plane
+            5,  # expected_end_plane
+            0,  # expected_direction
+        ),
+        (
+            np.array([0.0, -14.0, 0.0]),  # xstart
+            np.array([0.0, 14.0, 0.0]),  # xend
+            0,  # expected_start_plane
+            11,  # expected_end_plane
+            1,  # expected_direction
+        ),
+        (
+            np.array([0.0, 14.0, 0.0]),  # xstart
+            np.array([0.0, -14.0, 0.0]),  # xend
+            0,  # expected_start_plane
+            11,  # expected_end_plane
+            1,  # expected_direction
+        ),
+        (
+            np.array([0.0, 0.0, -14.0]),  # xstart
+            np.array([0.0, 0.0, 14.0]),  # xend
+            0,  # expected_start_plane
+            2,  # expected_end_plane
+            2,  # expected_direction
+        ),
+    ]
 
-    # print xstart, xend
-    print("xstart:", xstart)
-    print("xend:", xend)
+    for (
+        xstart,
+        xend,
+        expected_start_plane,
+        expected_end_plane,
+        expected_direction,
+    ) in test_cases:
+        # print xstart, xend
+        print("xstart:", xstart)
+        print("xend:", xend)
 
-    direction, cf, start_plane, end_plane = ray_cube_intersection(
-        xstart, xend, img_origin, voxsize, img_dim
-    )
+        direction, cf, start_plane, end_plane = ray_cube_intersection(
+            xstart, xend, img_origin, voxsize, img_dim
+        )
 
-    # print the plane position along the principal axis
-    print("direction:", direction)
-    for i in range(img_dim[direction]):
-        pos = img_origin[direction] + i * voxsize[direction]
-        print(f"plane position {i}: {pos}")
+        # print the plane position along the principal axis
+        print("direction:", direction)
+        for i in range(img_dim[direction]):
+            pos = img_origin[direction] + i * voxsize[direction]
+            print(f"plane position {i}: {pos}")
 
-    print("start_plane:", start_plane)
-    print("end_plane:", end_plane)
+        print("start_plane:", start_plane)
+        print("end_plane:", end_plane)
+        print()
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
 
-    # plot the image bounding box
-    # Calculate the corners of the bounding box
-    boxmin = img_origin - 0.5 * voxsize
-    boxmax = boxmin + img_dim * voxsize
+        # plot the image bounding box
+        # Calculate the corners of the bounding box
+        boxmin = img_origin - 0.5 * voxsize
+        boxmax = boxmin + img_dim * voxsize
 
-    # Define the vertices of the box
-    x = [boxmin[0], boxmax[0]]
-    y = [boxmin[1], boxmax[1]]
-    z = [boxmin[2], boxmax[2]]
+        # Define the vertices of the box
+        x = [boxmin[0], boxmax[0]]
+        y = [boxmin[1], boxmax[1]]
+        z = [boxmin[2], boxmax[2]]
 
-    # Plot the edges of the box
-    for i in range(2):
-        for j in range(2):
-            ax.plot([x[0], x[1]], [y[i], y[i]], [z[j], z[j]], color="black")
-            ax.plot([x[i], x[i]], [y[0], y[1]], [z[j], z[j]], color="black")
-            ax.plot([x[i], x[i]], [y[j], y[j]], [z[0], z[1]], color="black")
+        # Plot the edges of the box
+        for i in range(2):
+            for j in range(2):
+                ax.plot([x[0], x[1]], [y[i], y[i]], [z[j], z[j]], color="black")
+                ax.plot([x[i], x[i]], [y[0], y[1]], [z[j], z[j]], color="black")
+                ax.plot([x[i], x[i]], [y[j], y[j]], [z[0], z[1]], color="black")
 
-    # Plot the ray
-    ax.plot(
-        [xstart[0], xend[0]], [xstart[1], xend[1]], [xstart[2], xend[2]], color="red"
-    )
+        # Plot the ray
+        ax.plot(
+            [xstart[0], xend[0]],
+            [xstart[1], xend[1]],
+            [xstart[2], xend[2]],
+            color="red",
+        )
 
-    ax.scatter(xstart[0], xstart[1], xstart[2], color="red", marker="x")
-    ax.scatter(xend[0], xend[1], xend[2], color="red", marker="x")
+        ax.scatter(xstart[0], xstart[1], xstart[2], color="red", marker="o")
+        ax.scatter(xend[0], xend[1], xend[2], color="red", marker="x")
 
-    # set equal aspect ratio
-    ax.set_xlim(-10, 10)
-    ax.set_ylim(-10, 10)
-    ax.set_zlim(-10, 10)
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
+        # set equal aspect ratio
+        ax.set_xlim(-15, 15)
+        ax.set_ylim(-15, 15)
+        ax.set_zlim(-15, 15)
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
 
-    q = np.linspace(-10, 10, 2)
-    Q1, Q2 = np.meshgrid(q, q)
+        q = np.linspace(-10, 10, 2)
+        Q1, Q2 = np.meshgrid(q, q)
 
-    # draw all planes along the principal axis
-    for i in range(img_dim[direction]):
-        pos = img_origin[direction] + i * voxsize[direction]
-        draw_plane_bbox(ax, direction=direction, position=pos, bound=(-10, 10))
+        # draw all planes along the principal axis
+        for i in range(img_dim[direction]):
+            pos = img_origin[direction] + i * voxsize[direction]
+            if i == start_plane:
+                col = "blue"
+            elif i == end_plane:
+                col = "orange"
+            else:
+                col = "green"
+            draw_plane_bbox(
+                ax, direction=direction, position=pos, bound=(-10, 10), color=col
+            )
 
-    fig.show()
+        fig.show()
+
+        assert start_plane == expected_start_plane
+        assert end_plane == expected_end_plane
+        assert direction == expected_direction
