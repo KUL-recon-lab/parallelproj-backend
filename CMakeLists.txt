@@ -108,13 +108,14 @@ if(USE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     set(CMAKE_CUDA_ARCHITECTURES all)
     set(PARALLELPROJ_CUDA 1)
-    
+
     add_library(parallelproj SHARED ${LIB_SOURCES})
     target_link_libraries(parallelproj PRIVATE CUDA::cudart)
-    target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1) 
+    target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
+        tests/test_ray_cube_intersection.cpp
         tests/test_bilinear_interp.cpp
         tests/test_bilinear_interp_cuda.cu
         tests/test_bilinear_interp_adj.cpp
@@ -139,6 +140,7 @@ else()
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
 
     set(TEST_SOURCES
+        tests/test_ray_cube_intersection.cpp
         tests/test_bilinear_interp.cpp
         tests/test_bilinear_interp_adj.cpp
         tests/test_nontof_fwd_back.cpp
@@ -212,7 +214,7 @@ endif()
 
 if(BUILD_TESTS)
     enable_testing()
-    
+
     set(TEST_DATA_DIR ${CMAKE_SOURCE_DIR}/tests)
 
     # List all the .txt files that need to be copied
@@ -258,7 +260,7 @@ if(BUILD_TESTS)
 
         add_test(NAME python_interface_test COMMAND ${Python3_EXECUTABLE} -m  pytest -v ${CMAKE_SOURCE_DIR}/tests)
 
-        set_tests_properties(python_interface_test PROPERTIES ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:parallelproj_backend>$<SEMICOLON>$ENV{PYTHONPATH}") 
+        set_tests_properties(python_interface_test PROPERTIES ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:parallelproj_backend>$<SEMICOLON>$ENV{PYTHONPATH}")
     endif()
 endif()
 
