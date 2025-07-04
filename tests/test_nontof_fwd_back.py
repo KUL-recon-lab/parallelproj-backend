@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import parallelproj_backend as pp
 
@@ -68,3 +69,86 @@ def test_forward_and_back_projection(xp: ModuleType, dev: str):
 
     eps = 1e-7
     assert abs(ip1 - ip2) / abs(ip1) < eps, "Back projection test failed."
+
+
+def test_box_projection(xp: ModuleType, dev: str):
+    """test forward projection through a uniform box along different axes / angles"""
+
+    # generate an image box full of ones with side length 100mm but non-uniform voxel size
+    voxel_size = xp.asarray([2.0, 1.0, 4.0], device=dev, dtype=xp.float32)
+    img_dim = xp.asarray([50, 100, 25], device=dev, dtype=xp.int64)
+    img_origin = -50 + 0.5 * voxel_size
+
+    # Allocate memory for back projection results
+    img = xp.ones(img_dim, dtype=xp.float32, device=dev)
+
+    # create xstart and xend arrays
+    xstart = xp.asarray(
+        [
+            [100, 0, 0],  # exp val 100
+            [50, 0, 0],  # exp val 100
+            [0, 50, 0],  # exp val 100
+            [0, 0, 50],  # exp val 100
+            [40, 0, 0],  # exp val 80
+            [0, 40, 0],  # exp val 80
+            [0, 0, 40],  # exp val 80
+            [50, 5, 0],  # exp val sqrt(100^2 + 9^2) = 100.404
+            [0, 50, 5],  # exp val sqrt(100^2 + 9^2) = 100.404
+            [5, 0, 50],  # exp val sqrt(100^2 + 9^2) = 100.404
+            [50, 5, -2],  # exp val sqrt(100^2 + 9^2 + 5^2) = 100.528
+            [-2, 50, 5],  # exp val sqrt(100^2 + 9^2 + 5^2) = 100.528
+            [5, -2, 50],  # exp val sqrt(100^2 + 9^2 + 5^2) = 100.528
+        ],
+        device=dev,
+        dtype=xp.float32,
+    )
+
+    xend = xp.asarray(
+        [
+            [-100, 0, 0],
+            [-50, 0, 0],
+            [0, -50, 0],
+            [0, 0, -50],
+            [-40, 0, 0],
+            [0, -40, 0],
+            [0, 0, -40],
+            [-50, -4, 0],
+            [0, -50, -4],
+            [-4, 0, -50],
+            [-50, -4, 3],
+            [3, -50, -4],
+            [-4, 3, -50],
+        ],
+        device=dev,
+        dtype=xp.float32,
+    )
+
+    exp_vals = xp.asarray(
+        [
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            80.0,
+            80.0,
+            80.0,
+            math.sqrt(100**2 + 9**2),  # 100.404
+            math.sqrt(100**2 + 9**2),  # 100.404
+            math.sqrt(100**2 + 9**2),  # 100.404
+            math.sqrt(100**2 + 9**2 + 5**2),  # 100.528
+            math.sqrt(100**2 + 9**2 + 5**2),  # 100.528
+            math.sqrt(100**2 + 9**2 + 5**2),  # 100.528
+        ],
+        device=dev,
+        dtype=xp.float32,
+    )
+
+    img_fwd = xp.zeros(xstart.shape[0], dtype=xp.float32)
+
+    # Perform back projection
+    pp.joseph3d_fwd(xstart, xend, img, img_origin, voxel_size, img_fwd)
+
+    eps = 1e-5
+    assert (
+        float(xp.max(xp.abs(img_fwd - exp_vals))) < eps
+    ), "Forward box projection test failed."
