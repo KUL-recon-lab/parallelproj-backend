@@ -75,8 +75,8 @@ def test_box_projection(xp: ModuleType, dev: str):
     """test forward projection through a uniform box along different axes / angles"""
 
     # generate an image box full of ones with side length 100mm but non-uniform voxel size
+    img_dim = (50, 100, 25)
     voxel_size = xp.asarray([2.0, 1.0, 4.0], device=dev, dtype=xp.float32)
-    img_dim = xp.asarray([50, 100, 25], device=dev, dtype=xp.int64)
     img_origin = -50 + 0.5 * voxel_size
 
     # Allocate memory for back projection results
@@ -143,7 +143,7 @@ def test_box_projection(xp: ModuleType, dev: str):
         dtype=xp.float32,
     )
 
-    img_fwd = xp.zeros(xstart.shape[0], dtype=xp.float32)
+    img_fwd = xp.zeros(xstart.shape[0], dtype=xp.float32, device = dev)
 
     # Perform back projection
     pp.joseph3d_fwd(xstart, xend, img, img_origin, voxel_size, img_fwd)
