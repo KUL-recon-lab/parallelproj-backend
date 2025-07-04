@@ -7,76 +7,10 @@
 #include <numeric>
 #include <cuda_runtime.h>
 
-void test_cuda_managed_arrays(int device_id, int threadsperblock);
-void test_cuda_device_arrays(int device_id, int threadsperblock);
-void test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock);
-void test_box_projection_cuda_device_arrays(int device_id, int threadsperblock);
-
-int main()
-{
-  bool all_tests_passed = true;
-
-  int device_count;
-  cudaGetDeviceCount(&device_count);
-
-  for (int i = 0; i < device_count; i++)
-  {
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, i);
-    std::cout << "Device " << i << ": " << prop.name << "\n";
-
-    try
-    {
-      std::cout << "\n--- Testing with CUDA Managed Arrays ---\n";
-      test_cuda_managed_arrays(i, 64);
-    }
-    catch (const std::exception &e)
-    {
-      std::cerr << "CUDA-managed array test failed on device " << i << ": " << e.what() << "\n";
-      all_tests_passed = false;
-    }
-
-    std::cout << "\n--- Testing with CUDA Device Arrays ---\n";
-    try
-    {
-      std::cout << "\n--- Testing with CUDA Device Arrays ---\n";
-      test_cuda_device_arrays(i, 64);
-    }
-    catch (const std::exception &e)
-    {
-      std::cerr << "CUDA device array test failed on device " << i << ": " << e.what() << "\n";
-      all_tests_passed = false;
-    }
-
-    try
-    {
-      std::cout << "\n--- Testing Box Projection with CUDA Managed Arrays ---\n";
-      test_box_projection_cuda_managed_arrays(i, 64);
-    }
-    catch (const std::exception &e)
-    {
-      std::cerr << "CUDA-managed box projection test failed on device " << i << ": " << e.what() << "\n";
-      all_tests_passed = false;
-    }
-
-    try
-    {
-      std::cout << "\n--- Testing Box Projection with CUDA Device Arrays ---\n";
-      test_box_projection_cuda_device_arrays(i, 64);
-    }
-    catch (const std::exception &e)
-    {
-      std::cerr << "CUDA device array box projection test failed on device " << i << ": " << e.what() << "\n";
-      all_tests_passed = false;
-    }
-  }
-
-  return all_tests_passed ? 0 : 1;
-}
-
-void test_cuda_managed_arrays(int device_id, int threadsperblock)
+int test_cuda_managed_arrays(int device_id, int threadsperblock)
 {
   cudaSetDevice(device_id);
+  bool all_passed = true;
 
   // CUDA-managed array test
   int *cm_img_dim;
@@ -144,7 +78,7 @@ void test_cuda_managed_arrays(int device_id, int threadsperblock)
     if (fwd_diff > eps)
     {
       std::cerr << "CUDA-managed array test failed for ray " << ir << "\n";
-      return;
+      all_passed = false;
     }
   }
 
@@ -158,20 +92,6 @@ void test_cuda_managed_arrays(int device_id, int threadsperblock)
   std::fill(cm_ones, cm_ones + nlors, 1.0f);
 
   joseph3d_back(cm_xstart, cm_xend, cm_bimg, cm_img_origin, cm_voxsize, cm_ones, nvoxels, nlors, cm_img_dim, device_id, threadsperblock);
-
-  printf("\nCUDA-managed back projection of ones along all rays:\n");
-  for (size_t i0 = 0; i0 < cm_img_dim[0]; i0++)
-  {
-    for (size_t i1 = 0; i1 < cm_img_dim[1]; i1++)
-    {
-      for (size_t i2 = 0; i2 < cm_img_dim[2]; i2++)
-      {
-        printf("%.1f ", cm_bimg[cm_img_dim[1] * cm_img_dim[2] * i0 + cm_img_dim[2] * i1 + i2]);
-      }
-      printf("\n");
-    }
-    printf("\n");
-  }
 
   // Validate the back projection using adjointness
   float inner_product1 = 0.0f;
@@ -192,6 +112,7 @@ void test_cuda_managed_arrays(int device_id, int threadsperblock)
   if (ip_diff > eps)
   {
     std::cerr << "CUDA-managed array back projection test failed: adjointness property violated.\n";
+    all_passed = false;
   }
 
   cudaFree(cm_img_dim);
@@ -205,11 +126,14 @@ void test_cuda_managed_arrays(int device_id, int threadsperblock)
   cudaFree(cm_img_fwd);
   cudaFree(cm_bimg);
   cudaFree(cm_ones);
+
+  return all_passed ? 0 : 1;
 }
 
-void test_cuda_device_arrays(int device_id, int threadsperblock)
+int test_cuda_device_arrays(int device_id, int threadsperblock)
 {
   cudaSetDevice(device_id);
+  bool all_passed = true;
 
   // CUDA device array test
   int *d_img_dim;
@@ -280,7 +204,7 @@ void test_cuda_device_arrays(int device_id, int threadsperblock)
     if (fwd_diff > eps)
     {
       std::cerr << "CUDA device array test failed for ray " << ir << "\n";
-      return;
+      all_passed = false;
     }
   }
 
@@ -298,20 +222,6 @@ void test_cuda_device_arrays(int device_id, int threadsperblock)
 
   std::vector<float> h_bimg(h_img_dim[0] * h_img_dim[1] * h_img_dim[2]);
   cudaMemcpy(h_bimg.data(), d_bimg, h_bimg.size() * sizeof(float), cudaMemcpyDeviceToHost);
-
-  printf("\nCUDA device back projection of ones along all rays:\n");
-  for (size_t i0 = 0; i0 < h_img_dim[0]; i0++)
-  {
-    for (size_t i1 = 0; i1 < h_img_dim[1]; i1++)
-    {
-      for (size_t i2 = 0; i2 < h_img_dim[2]; i2++)
-      {
-        printf("%.1f ", h_bimg[h_img_dim[1] * h_img_dim[2] * i0 + h_img_dim[2] * i1 + i2]);
-      }
-      printf("\n");
-    }
-    printf("\n");
-  }
 
   // Validate the back projection using adjointness
   float inner_product1 = 0.0f;
@@ -332,6 +242,7 @@ void test_cuda_device_arrays(int device_id, int threadsperblock)
   if (ip_diff > eps)
   {
     std::cerr << "CUDA device array back projection test failed: adjointness property violated.\n";
+    all_passed = false;
   }
 
   cudaFree(d_img_dim);
@@ -344,11 +255,14 @@ void test_cuda_device_arrays(int device_id, int threadsperblock)
   cudaFree(d_img_fwd);
   cudaFree(d_bimg);
   cudaFree(d_ones);
+
+  return all_passed ? 0 : 1;
 }
 
-void test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock)
+int test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock)
 {
   cudaSetDevice(device_id);
+  bool all_passed = true;
 
   // Test parameters
   std::vector<float> voxel_size = {2.0f, 1.0f, 4.0f};
@@ -411,6 +325,7 @@ void test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock)
     {
       std::cerr << "[Managed] Forward box projection test failed at i=" << i
                 << ": got " << d_img_fwd[i] << ", expected " << exp_vals[i] << std::endl;
+      all_passed = false;
     }
   }
 
@@ -421,11 +336,14 @@ void test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock)
   cudaFree(d_voxel_size);
   cudaFree(d_img_fwd);
   cudaFree(d_img_dim);
+
+  return all_passed ? 0 : 1;
 }
 
-void test_box_projection_cuda_device_arrays(int device_id, int threadsperblock)
+int test_box_projection_cuda_device_arrays(int device_id, int threadsperblock)
 {
   cudaSetDevice(device_id);
+  bool all_passed = true;
 
   // Test parameters
   std::vector<float> voxel_size = {2.0f, 1.0f, 4.0f};
@@ -490,6 +408,7 @@ void test_box_projection_cuda_device_arrays(int device_id, int threadsperblock)
     {
       std::cerr << "[Device] Forward box projection test failed at i=" << i
                 << ": got " << img_fwd2[i] << ", expected " << exp_vals[i] << std::endl;
+      all_passed = false;
     }
   }
 
@@ -500,4 +419,37 @@ void test_box_projection_cuda_device_arrays(int device_id, int threadsperblock)
   cudaFree(dvoxel_size);
   cudaFree(dimg_fwd);
   cudaFree(dimg_dim);
+
+  return all_passed ? 0 : 1;
+}
+
+int main()
+{
+  bool all_tests_passed = true;
+
+  int device_count;
+  cudaGetDeviceCount(&device_count);
+  int i = 0; // test on the first device
+
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, i);
+  std::cout << "Device " << i << ": " << prop.name << "\n";
+
+  std::cout << "\n--- Testing with CUDA Managed Arrays ---\n";
+  if (test_cuda_managed_arrays(i, 64) != 0)
+    all_tests_passed = false;
+
+  std::cout << "\n--- Testing with CUDA Device Arrays ---\n";
+  if (test_cuda_device_arrays(i, 64) != 0)
+    all_tests_passed = false;
+
+  std::cout << "\n--- Testing Box Projection with CUDA Managed Arrays ---\n";
+  if (test_box_projection_cuda_managed_arrays(i, 64) != 0)
+    all_tests_passed = false;
+
+  std::cout << "\n--- Testing Box Projection with CUDA Device Arrays ---\n";
+  if (test_box_projection_cuda_device_arrays(i, 64) != 0)
+    all_tests_passed = false;
+
+  return all_tests_passed ? 0 : 1;
 }
