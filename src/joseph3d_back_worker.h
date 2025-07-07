@@ -62,7 +62,7 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
     b1 = (xstart[3 * i + 1] - img_origin[1] + d1 * (img_origin[direction] - xstart[3 * i + direction]) / dr) / voxsize[1];
 
     a2 = (d2 * voxsize[direction]) / (voxsize[2] * dr);
-    b2 = (xstart[3 * i + 2] - img_origin[2] + d2 * (img_origin[direction] - xstart[3 * 2 + direction]) / dr) / voxsize[2];
+    b2 = (xstart[3 * i + 2] - img_origin[2] + d2 * (img_origin[direction] - xstart[3 * i + direction]) / dr) / voxsize[2];
 
     // get the intersection points of the ray and the start image plane in voxel coordinates
     i1_f = istart * a1 + b1;
@@ -83,7 +83,7 @@ WORKER_QUALIFIER inline void joseph3d_back_worker(size_t i,
     b0 = (xstart[3 * i + 0] - img_origin[0] + d0 * (img_origin[direction] - xstart[3 * i + direction]) / dr) / voxsize[0];
 
     a2 = (d2 * voxsize[direction]) / (voxsize[2] * dr);
-    b2 = (xstart[3 * i + 2] - img_origin[2] + d2 * (img_origin[direction] - xstart[3 * 2 + direction]) / dr) / voxsize[2];
+    b2 = (xstart[3 * i + 2] - img_origin[2] + d2 * (img_origin[direction] - xstart[3 * i + direction]) / dr) / voxsize[2];
 
     // get the intersection points of the ray and the start image plane in voxel coordinates
     i0_f = istart * a0 + b0;
