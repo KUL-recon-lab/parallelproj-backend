@@ -3,13 +3,16 @@ import math
 import numpy as np
 from scipy.special import erf
 
+# angle between the ray and the stepping direction (costheta = voxsize[dir] / cf)
+costheta = 0.85
+
 # Plot with current parameters
 xs = [450.0, 0, 0]
 xe = [-250.0, 0, 0]
 dir = 0
-fwhm_tof = 60.0
+fwhm_tof = 120.0
 tofbin_width = fwhm_tof / 3.0
-num_tofbins = int(0.95 * abs(xe[dir] - xs[dir]) / tofbin_width) + 1
+num_tofbins = int(0.95 * abs(xe[dir] - xs[dir]) / (tofbin_width * costheta)) + 1
 
 sigma_tof = fwhm_tof / (2 * math.sqrt(2 * math.log(2)))
 dmax = 3.5 * max(sigma_tof, tofbin_width)
@@ -39,8 +42,6 @@ effective_tof_kernel_lut = effective_tof_kernel(d_samples)
 # %%
 # calculate the word coordinates of the tof bin center (x_center_tofbin)
 
-# angle between the ray and the stepping direction (costheta = voxsize[dir] / cf)
-costheta = 1.0
 
 xm = 0.5 * (xs[dir] + xe[dir])
 sign = 1 if xe[dir] >= xs[dir] else -1
@@ -93,8 +94,10 @@ x_center_tofbin = [b_tof + a_tof * k for k in range(num_tofbins)]
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 4), layout="constrained")
 
-offset_b = -sign * (num_tofbins / 2) * tofbin_width
-boundaries = [xm + offset_b + sign * k * tofbin_width for k in range(num_tofbins + 1)]
+offset_b = -sign * (num_tofbins / 2) * tofbin_width * costheta
+boundaries = [
+    xm + offset_b + sign * k * tofbin_width * costheta for k in range(num_tofbins + 1)
+]
 
 span_min = min(xs[dir], xe[dir], boundaries[0])
 span_max = max(xs[dir], xe[dir], boundaries[-1])
