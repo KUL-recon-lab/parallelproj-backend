@@ -1,15 +1,31 @@
 import math
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import erf
 
 img_dim = (250, 270, 280)
 voxsize = (2, 2, 2)
 
-xstart = (300, 2, -1)
-xend = (-300, -3, 4)
+xstart = (300, 100, -200)
+xend = (-300, -100, 100)
 
-num_tofbins = 28
-tofbin_width = 20.0
-sigma_tof = 30.0
-num_sigmas = 3.5
+num_tofbins: int = 40
+tofbin_width: float = 15.0
+sigma_tof: float = 35.0
+num_sigmas: float = 3.0
+
+norm_tof_weights: bool = True
+show_fig = False
+
+
+# %%
+def effective_tof_kernel(dx):
+    """Gaussian integrated over a tof bin width."""
+    return 0.5 * (
+        erf((dx + 0.5 * tofbin_width) / (math.sqrt(2) * sigma_tof))
+        - erf((dx - 0.5 * tofbin_width) / (math.sqrt(2) * sigma_tof))
+    )
+
 
 # %%
 n0, n1, n2 = img_dim
@@ -71,23 +87,61 @@ i2_f = istart * a2 + b2
 # TOF related calculations
 
 # max tof bin diffference where kernel is effectively non-zero
-max_tof_bin_diff = num_sigmas * max(sigma_tof, tofbin_width) / tofbin_width
-costheta = voxsize[direction] / cf
+# max_tof_bin_diff = num_sigmas * max(sigma_tof, tofbin_width) / tofbin_width
+max_tof_bin_diff: float = num_sigmas * sigma_tof / tofbin_width
+costheta: float = voxsize[direction] / cf
 
 # calculate the where the TOF bins are located along the projected line
 # in world coordinates
-xm = 0.5 * (xstart[direction] + xend[direction])
-sign = 1 if xend[direction] >= xstart[direction] else -1
+sign: int = 1 if xend[direction] >= xstart[direction] else -1
 # the tof bin centers (in world coordinates) are at it*a_tof + b_tof for it in range(num_tofbins)
-b_tof = xm - sign * (num_tofbins / 2 - 0.5) * (tofbin_width * costheta)
-a_tof = sign * (tofbin_width * costheta)
+b_tof: float = 0.5 * (xstart[direction] + xend[direction]) - sign * (
+    num_tofbins / 2 - 0.5
+) * (tofbin_width * costheta)
+a_tof: float = sign * (tofbin_width * costheta)
 
 ### TOF offset and increment per voxel step in direction
-at = voxsize[direction] / a_tof
-bt = (img_origin[direction] - b_tof) / a_tof
+# at: float = voxsize[direction] / a_tof
+at: float = sign * cf / tofbin_width
+bt: float = (img_origin[direction] - b_tof) / a_tof
 
 # it_f is the index of the TOF bin at the current plane
-it_f = istart * at + bt
+it_f: float = istart * at + bt
+
+#####################################
+#####################################
+#####################################
+
+if show_fig:
+    fig = plt.figure(figsize=(8, 8), layout="constrained")
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.plot([xstart[0], xend[0]], [xstart[1], xend[1]], [xstart[2], xend[2]], "r-")
+    ax.plot([xstart[0], xend[0]], [xstart[1], xstart[1]], [xstart[2], xstart[2]], "b-")
+
+    ax.scatter(xstart[0], xstart[1], xstart[2], c="r", marker="x")
+    ax.scatter(xend[0], xend[1], xend[2], c="r")
+    ax.scatter(xend[0], xstart[1], xstart[2], c="b")
+
+    ax.scatter(img_origin[0], xstart[1], xstart[2], marker=".", c="k")
+    ax.scatter(
+        img_origin[0] + voxsize[0] * (img_dim[0] - 1),
+        xstart[1],
+        xstart[2],
+        marker=".",
+        c="k",
+    )
+
+    ax.scatter(
+        [i * a_tof + b_tof for i in range(num_tofbins)],
+        num_tofbins * [xstart[1]],
+        num_tofbins * [xstart[2]],
+        marker="x",
+    )
+
+    ax.set_xlim(-400, 400)
+    ax.set_ylim(-400, 400)
+    ax.set_zlim(-400, 400)
 
 #####################################
 #####################################
@@ -100,23 +154,31 @@ for i in range(istart, iend + 1):
 
     # min and max tof bin for which we have to calculate tof weights
     it_min = math.floor(it_f - max_tof_bin_diff)
-    if it_min < 0:
-        it_min = 0
-    if it_min > (num_tofbins - 1):
-        it_min = num_tofbins - 1
-
     it_max = math.ceil(it_f + max_tof_bin_diff)
-    if it_max < 0:
-        it_max = 0
-    if it_max > (num_tofbins - 1):
-        it_max = num_tofbins - 1
+
+    tof_weights = np.zeros(it_max + 1 - it_min)
+    for k, it in enumerate(range(it_min, it_max + 1)):
+        dist = abs(it_f - it) * tofbin_width
+        tof_weights[k] = effective_tof_kernel(dist)
+
+    if norm_tof_weights:
+        tof_weights /= tof_weights.sum()
+
+    trunc_tof_sum = 0.0
+    for k, it in enumerate(range(it_min, it_max + 1)):
+        if it >= 0 and it < num_tofbins:
+            trunc_tof_sum += tof_weights[k]
 
     ################################ diagnostics
     x_dir = i * voxsize[direction] + img_origin[direction]
-    print(i, x_dir, it_f, it_min, it_max)
+    print(i, x_dir, it_f, it_min, it_max, tof_weights.sum(), trunc_tof_sum)
 
     ################################ diagnostics
 
     i1_f += a1
     i2_f += a2
     it_f += at
+
+
+if show_fig:
+    plt.show()
