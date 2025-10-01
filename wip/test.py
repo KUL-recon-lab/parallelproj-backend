@@ -3,31 +3,42 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import erf
 
-img_dim = (250, 270, 280)
+
+def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
+    """Gaussian integrated over a tof bin width."""
+    sqrt2 = math.sqrt(2.0)
+    return 0.5 * (
+        erf((dx + 0.5 * tbin_width) / (sqrt2 * sigma_t))
+        - erf((dx - 0.5 * tbin_width) / (sqrt2 * sigma_t))
+    )
+
+
+img_dim = (290, 270, 280)
 voxsize = (2, 2, 2)
 
 xstart = (300, 100, -200)
 xend = (-300, -100, 100)
 
-num_tofbins: int = 40
-tofbin_width: float = 15.0
+tofbin_width: float = 35.0
 sigma_tof: float = 35.0
 num_sigmas: float = 3.0
 
-norm_tof_weights: bool = True
-show_fig = False
+norm_tof_weights: bool = False
+show_fig = True
 
+num_tofbins: int | None = None
 
-# %%
-def effective_tof_kernel(dx):
-    """Gaussian integrated over a tof bin width."""
-    return 0.5 * (
-        erf((dx + 0.5 * tofbin_width) / (math.sqrt(2) * sigma_tof))
-        - erf((dx - 0.5 * tofbin_width) / (math.sqrt(2) * sigma_tof))
+###########################################
+
+if num_tofbins is None:
+    ray_length = math.sqrt(
+        (xend[0] - xstart[0]) ** 2
+        + (xend[1] - xstart[1]) ** 2
+        + (xend[2] - xstart[2]) ** 2
     )
+    num_tofbins = math.ceil(ray_length / tofbin_width)
 
 
-# %%
 n0, n1, n2 = img_dim
 
 img_origin = (
@@ -159,7 +170,7 @@ for i in range(istart, iend + 1):
     tof_weights = np.zeros(it_max + 1 - it_min)
     for k, it in enumerate(range(it_min, it_max + 1)):
         dist = abs(it_f - it) * tofbin_width
-        tof_weights[k] = effective_tof_kernel(dist)
+        tof_weights[k] = effective_tof_kernel(dist, sigma_tof, tofbin_width)
 
     if norm_tof_weights:
         tof_weights /= tof_weights.sum()
