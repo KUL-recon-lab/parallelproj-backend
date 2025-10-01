@@ -13,17 +13,18 @@ def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
     )
 
 
-img_dim = (290, 270, 280)
+img_dim = (280, 270, 280)
 voxsize = (2, 2, 2)
 
 xstart = (300, 100, -200)
 xend = (-300, -100, 100)
 
-tofbin_width: float = 35.0
-sigma_tof: float = 35.0
+tofbin_width: float = 12.0
+sigma_tof: float = 24.0
 num_sigmas: float = 3.0
+tof_center_offset: float = 0.0
 
-norm_tof_weights: bool = False
+norm_tof_weights: bool = True
 show_fig = True
 
 num_tofbins: int | None = None
@@ -99,22 +100,24 @@ i2_f = istart * a2 + b2
 
 # max tof bin diffference where kernel is effectively non-zero
 # max_tof_bin_diff = num_sigmas * max(sigma_tof, tofbin_width) / tofbin_width
-max_tof_bin_diff: float = num_sigmas * sigma_tof / tofbin_width
 costheta: float = voxsize[direction] / cf
+max_tof_bin_diff: float = num_sigmas * sigma_tof / (tofbin_width)
 
 # calculate the where the TOF bins are located along the projected line
 # in world coordinates
 sign: int = 1 if xend[direction] >= xstart[direction] else -1
-# the tof bin centers (in world coordinates) are at it*a_tof + b_tof for it in range(num_tofbins)
-b_tof: float = 0.5 * (xstart[direction] + xend[direction]) - sign * (
-    num_tofbins / 2 - 0.5
-) * (tofbin_width * costheta)
-a_tof: float = sign * (tofbin_width * costheta)
+# the tof bin centers (in world coordinates projected to the axis along which we step through the volume)
+# are at it*a_tof + b_tof for it in range(num_tofbins)
+tof_origin: float = (
+    0.5 * (xstart[direction] + xend[direction])
+    - sign * (num_tofbins / 2 - 0.5) * (tofbin_width * costheta)
+    + tof_center_offset * costheta
+)
+tof_slope: float = sign * (tofbin_width * costheta)
 
 ### TOF offset and increment per voxel step in direction
-# at: float = voxsize[direction] / a_tof
 at: float = sign * cf / tofbin_width
-bt: float = (img_origin[direction] - b_tof) / a_tof
+bt: float = (img_origin[direction] - tof_origin) / tof_slope
 
 # it_f is the index of the TOF bin at the current plane
 it_f: float = istart * at + bt
@@ -144,7 +147,7 @@ if show_fig:
     )
 
     ax.scatter(
-        [i * a_tof + b_tof for i in range(num_tofbins)],
+        [i * tof_slope + tof_origin for i in range(num_tofbins)],
         num_tofbins * [xstart[1]],
         num_tofbins * [xstart[2]],
         marker="x",
@@ -182,7 +185,7 @@ for i in range(istart, iend + 1):
 
     ################################ diagnostics
     x_dir = i * voxsize[direction] + img_origin[direction]
-    print(i, x_dir, it_f, it_min, it_max, tof_weights.sum(), trunc_tof_sum)
+    print(i, num_tofbins, x_dir, it_f, it_min, it_max, tof_weights.sum(), trunc_tof_sum)
 
     ################################ diagnostics
 
@@ -192,4 +195,7 @@ for i in range(istart, iend + 1):
 
 
 if show_fig:
+    fig2, ax2 = plt.subplots(figsize=(8, 6), layout="constrained")
+    ax2.plot(tof_weights, "o-")
+
     plt.show()
