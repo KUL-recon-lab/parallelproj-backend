@@ -6,6 +6,12 @@ voxsize = (2, 2, 2)
 xstart = (300, 2, -1)
 xend = (-300, -3, 4)
 
+num_tofbins = 28
+tofbin_width = 20.0
+sigma_tof = 30.0
+num_sigmas = 3.5
+
+# %%
 n0, n1, n2 = img_dim
 
 img_origin = (
@@ -32,22 +38,6 @@ cos_sq = dr_sq[direction] / sum_sq
 cf = voxsize[direction] / (cos_sq**0.5)
 # %%
 
-num_tofbins = 28
-tofbin_width = 20.0
-sigma_tof = 30.0
-num_sigmas = 3.5
-max_tof_bin_diff = num_sigmas * max(sigma_tof, tofbin_width) / tofbin_width
-
-costheta = voxsize[direction] / cf
-
-
-xm = 0.5 * (xstart[direction] + xend[direction])
-sign = 1 if xend[direction] >= xstart[direction] else -1
-
-# the tof bin centers (in world coordinates) are at it*a_tof + b_tof for it in range(num_tofbins)
-b_tof = xm - sign * (num_tofbins / 2 - 0.5) * (tofbin_width * costheta)
-a_tof = sign * (tofbin_width * costheta)
-
 
 # %%
 # step through the volume plane by plane
@@ -68,22 +58,45 @@ b2 = (
 ) / voxsize[2]
 #### ONLY VALID FOR direction == 0 ####
 
-
 istart = 0
 iend = img_dim[direction] - 1
 
 i1_f = istart * a1 + b1
 i2_f = istart * a2 + b2
 
+#####################################
+#####################################
+#####################################
+
+# TOF related calculations
+
+# max tof bin diffference where kernel is effectively non-zero
+max_tof_bin_diff = num_sigmas * max(sigma_tof, tofbin_width) / tofbin_width
+costheta = voxsize[direction] / cf
+
+# calculate the where the TOF bins are located along the projected line
+# in world coordinates
+xm = 0.5 * (xstart[direction] + xend[direction])
+sign = 1 if xend[direction] >= xstart[direction] else -1
+# the tof bin centers (in world coordinates) are at it*a_tof + b_tof for it in range(num_tofbins)
+b_tof = xm - sign * (num_tofbins / 2 - 0.5) * (tofbin_width * costheta)
+a_tof = sign * (tofbin_width * costheta)
+
+### TOF offset and increment per voxel step in direction
+at = voxsize[direction] / a_tof
+bt = (img_origin[direction] - b_tof) / a_tof
+
+# it_f is the index of the TOF bin at the current plane
+it_f = istart * at + bt
+
+#####################################
+#####################################
+#####################################
+
+
 for i in range(istart, iend + 1):
     # print(f"{i0:03}, {i1_f:7.2f}, {i2_f:7.2f}, {x0_f:7.2f}, {x1_f:7.2f}, {x2_f:7.2f}")
     # p[i] += bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
-
-    i1_f += a1
-    i2_f += a2
-
-    x_dir = i * voxsize[direction] + img_origin[direction]
-    it_f = (x_dir - b_tof) / a_tof
 
     # min and max tof bin for which we have to calculate tof weights
     it_min = math.floor(it_f - max_tof_bin_diff)
@@ -98,4 +111,12 @@ for i in range(istart, iend + 1):
     if it_max > (num_tofbins - 1):
         it_max = num_tofbins - 1
 
+    ################################ diagnostics
+    x_dir = i * voxsize[direction] + img_origin[direction]
     print(i, x_dir, it_f, it_min, it_max)
+
+    ################################ diagnostics
+
+    i1_f += a1
+    i2_f += a2
+    it_f += at
