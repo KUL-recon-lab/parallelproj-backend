@@ -18,10 +18,9 @@ WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
     float tofbin_width,
     float sig_tof,
     float *tof_weights, // buffer to hold TOF weights of size at least MAX_NUM_TOF_WEIGHTS
-    int n_tof_weights,
-    float toAdd,    // normalized contribution
-    float *p,       // projection output (size: n_lors * n_tofbins)
-    size_t lor_idx, // LOR index i (use size_t to match caller)
+    float toAdd,        // normalized contribution
+    float *p,           // projection output (size: n_lors * n_tofbins)
+    size_t lor_idx,     // LOR index i (use size_t to match caller)
     short n_tofbins)
 {
   int it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
@@ -109,7 +108,6 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
   float toAdd; // non-TOF contribution to the projection value for a given image plane
   float dist;
   float tof_weights[MAX_NUM_TOF_WEIGHTS]; // buffer to hold TOF weights for a given image plane
-  int n_tof_weights;
   float sum_weights;
   int k_start;
   int k_end;
@@ -163,7 +161,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       toAdd = cf * bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
 
       _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
-                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
+                             tof_weights, toAdd, p, i, n_tofbins);
 
       i1_f += a1;
       i2_f += a2;
@@ -190,7 +188,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       toAdd = cf * bilinear_interp_fixed1(img, n0, n1, n2, i0_f, i1, i2_f);
 
       _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
-                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
+                             tof_weights, toAdd, p, i, n_tofbins);
 
       i0_f += a0;
       i2_f += a2;
@@ -217,7 +215,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       toAdd = cf * bilinear_interp_fixed2(img, n0, n1, n2, i0_f, i1_f, i2);
 
       _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
-                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
+                             tof_weights, toAdd, p, i, n_tofbins);
 
       i0_f += a0;
       i1_f += a1;

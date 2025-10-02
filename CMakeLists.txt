@@ -113,23 +113,13 @@ if(USE_CUDA)
     target_link_libraries(parallelproj PRIVATE CUDA::cudart)
     target_compile_definitions(parallelproj PUBLIC PARALLELPROJ_CUDA=1)
     target_compile_definitions(parallelproj PRIVATE PARALLELPROJ_EXPORTS)
-
-    #set(TEST_SOURCES
-    #    tests/test_ray_cube_intersection.cpp
-    #    tests/test_ray_cube_intersection_cuda.cu
-    #    tests/test_bilinear_interp.cpp
-    #    tests/test_bilinear_interp_cuda.cu
-    #    tests/test_bilinear_interp_adj.cpp
-    #    tests/test_bilinear_interp_adj_cuda.cu
-    #    tests/test_nontof_fwd_back.cpp
-    #    tests/test_nontof_fwd_back_cuda.cu
-    #)
 else()
     message(STATUS "CUDA build disabled.")
 
     set(LIB_SOURCES
         src/joseph3d_fwd.cpp
         src/joseph3d_back.cpp
+        src/joseph3d_tof_sino_fwd.cpp
     )
 
     find_package(OpenMP REQUIRED)
