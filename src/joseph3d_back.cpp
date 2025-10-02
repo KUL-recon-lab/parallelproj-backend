@@ -1,6 +1,5 @@
 #include "parallelproj.h"
 #include "joseph3d_back_worker.h"
-#include "debug.h"
 
 void joseph3d_back(const float *xstart,
                    const float *xend,
@@ -16,8 +15,8 @@ void joseph3d_back(const float *xstart,
 {
 
 #pragma omp parallel for
-    for (long long i = 0; i < static_cast<long long>(nlors); ++i)
-    {
-        joseph3d_back_worker(i, xstart, xend, img, img_origin, voxsize, p, img_dim);
-    }
+  for (long long i = 0; i < static_cast<long long>(nlors); ++i)
+  {
+    joseph3d_back_worker(i, xstart, xend, img, img_origin, voxsize, p, img_dim);
+  }
 }
