@@ -10,6 +10,42 @@
 #define MAX_NUM_TOF_WEIGHTS 64
 #endif
 
+// Helper: compute TOF weights into caller buffer and scatter normalized contribution.
+// No bounds check for MAX_NUM_TOF_WEIGHTS (caller must provide a large enough buffer).
+WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
+    float it_f,
+    float max_tof_bin_diff,
+    float tofbin_width,
+    float sig_tof,
+    float *tof_weights, // buffer to hold TOF weights of size at least MAX_NUM_TOF_WEIGHTS
+    int n_tof_weights,
+    float toAdd,    // normalized contribution
+    float *p,       // projection output (size: n_lors * n_tofbins)
+    size_t lor_idx, // LOR index i (use size_t to match caller)
+    short n_tofbins)
+{
+  int it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
+  int it_max = static_cast<int>(ceilf(it_f + max_tof_bin_diff));
+  int n_tof_weights = it_max + 1 - it_min;
+
+  float sum_weights = 0.0f;
+  for (int k = 0; k < n_tof_weights; ++k)
+  {
+    float dist = fabsf(it_f - it_min - k) * tofbin_width;
+    tof_weights[k] = effective_gaussian_tof_kernel(dist, sig_tof, tofbin_width);
+    sum_weights += tof_weights[k];
+  }
+
+  // normalize and scatter only into valid TOF bins
+  toAdd /= sum_weights;
+  int k_start = (it_min < 0) ? -it_min : 0;
+  int k_end = ((it_min + n_tof_weights) > n_tofbins) ? (n_tofbins - it_min) : n_tof_weights;
+  for (int k = k_start; k < k_end; ++k)
+  {
+    p[lor_idx * n_tofbins + it_min + k] = toAdd * tof_weights[k];
+  }
+}
+
 WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
                                                           const float *xstart,
                                                           const float *xend,
@@ -72,7 +108,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
   int it_max;  // maximum TOF bin number to consider for a given image plane
   float toAdd; // non-TOF contribution to the projection value for a given image plane
   float dist;
-  float tof_weights[MAX_NUM_TOF_WEIGHTS];
+  float tof_weights[MAX_NUM_TOF_WEIGHTS]; // buffer to hold TOF weights for a given image plane
   int n_tof_weights;
   float sum_weights;
   int k_start;
@@ -126,43 +162,8 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       // non-TOF contribution
       toAdd = cf * bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
 
-      //////////////////////////////////////////////////////////////////////////
-      // CALCULATION OF NORMALIZED TOF WEIGHTS /////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////
-      // min and max TOF bin numbers to consider for this image plane
-      it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
-      it_max = static_cast<int>(ceilf(it_f + max_tof_bin_diff));
-
-      // Allocate array for TOF weights
-      n_tof_weights = it_max + 1 - it_min;
-
-      // Compute TOF weights
-      sum_weights = 0.0f;
-      for (int k = 0; k < n_tof_weights; ++k)
-      {
-        // int it = it_min + k;
-        dist = fabsf(it_f - it_min - k) * tofbin_width;
-        tof_weights[k] = effective_gaussian_tof_kernel(dist, sig_tof, tofbin_width);
-        sum_weights += tof_weights[k];
-      }
-
-      // add normalized TOF contribution to the projection value
-      if (sum_weights > 0.0f)
-      {
-        // correct for the sum of weights
-        toAdd /= sum_weights;
-
-        k_start = (it_min < 0) ? -it_min : 0;
-        k_end = ((it_min + n_tof_weights) > n_tofbins) ? (n_tofbins - it_min) : n_tof_weights;
-
-        for (int k = k_start; k < k_end; ++k)
-        {
-          p[i * n_tofbins + it_min + k] = toAdd * tof_weights[k];
-        }
-      }
-      //////////////////////////////////////////////////////////////////////////
-      /// END CALCULATION OF TOF NORMALIZED TOF WEIGHTS ////////////////////////
-      //////////////////////////////////////////////////////////////////////////
+      _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
+                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
 
       i1_f += a1;
       i2_f += a2;
@@ -188,43 +189,8 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       // non-TOF contribution
       toAdd = cf * bilinear_interp_fixed1(img, n0, n1, n2, i0_f, i1, i2_f);
 
-      //////////////////////////////////////////////////////////////////////////
-      // CALCULATION OF NORMALIZED TOF WEIGHTS /////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////
-      // min and max TOF bin numbers to consider for this image plane
-      it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
-      it_max = static_cast<int>(ceilf(it_f + max_tof_bin_diff));
-
-      // Allocate array for TOF weights
-      n_tof_weights = it_max + 1 - it_min;
-
-      // Compute TOF weights
-      sum_weights = 0.0f;
-      for (int k = 0; k < n_tof_weights; ++k)
-      {
-        // int it = it_min + k;
-        dist = fabsf(it_f - it_min - k) * tofbin_width;
-        tof_weights[k] = effective_gaussian_tof_kernel(dist, sig_tof, tofbin_width);
-        sum_weights += tof_weights[k];
-      }
-
-      // add normalized TOF contribution to the projection value
-      if (sum_weights > 0.0f)
-      {
-        // correct for the sum of weights
-        toAdd /= sum_weights;
-
-        k_start = (it_min < 0) ? -it_min : 0;
-        k_end = ((it_min + n_tof_weights) > n_tofbins) ? (n_tofbins - it_min) : n_tof_weights;
-
-        for (int k = k_start; k < k_end; ++k)
-        {
-          p[i * n_tofbins + it_min + k] = toAdd * tof_weights[k];
-        }
-      }
-      //////////////////////////////////////////////////////////////////////////
-      /// END CALCULATION OF TOF NORMALIZED TOF WEIGHTS ////////////////////////
-      //////////////////////////////////////////////////////////////////////////
+      _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
+                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
 
       i0_f += a0;
       i2_f += a2;
@@ -250,43 +216,8 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
       // non-TOF contribution
       toAdd = cf * bilinear_interp_fixed2(img, n0, n1, n2, i0_f, i1_f, i2);
 
-      //////////////////////////////////////////////////////////////////////////
-      // CALCULATION OF NORMALIZED TOF WEIGHTS /////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////
-      // min and max TOF bin numbers to consider for this image plane
-      it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
-      it_max = static_cast<int>(ceilf(it_f + max_tof_bin_diff));
-
-      // Allocate array for TOF weights
-      n_tof_weights = it_max + 1 - it_min;
-
-      // Compute TOF weights
-      sum_weights = 0.0f;
-      for (int k = 0; k < n_tof_weights; ++k)
-      {
-        // int it = it_min + k;
-        dist = fabsf(it_f - it_min - k) * tofbin_width;
-        tof_weights[k] = effective_gaussian_tof_kernel(dist, sig_tof, tofbin_width);
-        sum_weights += tof_weights[k];
-      }
-
-      // add normalized TOF contribution to the projection value
-      if (sum_weights > 0.0f)
-      {
-        // correct for the sum of weights
-        toAdd /= sum_weights;
-
-        k_start = (it_min < 0) ? -it_min : 0;
-        k_end = ((it_min + n_tof_weights) > n_tofbins) ? (n_tofbins - it_min) : n_tof_weights;
-
-        for (int k = k_start; k < k_end; ++k)
-        {
-          p[i * n_tofbins + it_min + k] = toAdd * tof_weights[k];
-        }
-      }
-      //////////////////////////////////////////////////////////////////////////
-      /// END CALCULATION OF TOF NORMALIZED TOF WEIGHTS ////////////////////////
-      //////////////////////////////////////////////////////////////////////////
+      _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
+                             tof_weights, n_tof_weights, toAdd, p, i, n_tofbins);
 
       i0_f += a0;
       i1_f += a1;
