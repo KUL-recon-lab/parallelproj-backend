@@ -1,7 +1,6 @@
 #pragma once
 #include <cmath>
 #include "cuda_compat.h"
-#include "utils.h" // for atomic_sum
 
 #ifndef __CUDACC__
 #include <math.h>
@@ -358,4 +357,22 @@ WORKER_QUALIFIER inline void bilinear_interp_adj_fixed2(
   inject(i0_1, i1_0, w10);
   inject(i0_0, i1_1, w01);
   inject(i0_1, i1_1, w11);
+}
+
+/**
+ * @brief Computes the effective Gaussian Time-of-Flight kernel given by the integral of a normalized
+ * Gaussian over dx - tbin_width/2 to dx + tbin_width/2.
+ *
+ * @param dx         distance
+ * @param sigma_t    standard deviation of the Gaussian (same units as dx)
+ * @param tbin_width width of the TOF bin (same units as dx)
+ * @return           the effective kernel value
+ */
+WORKER_QUALIFIER inline float effective_gaussian_tof_kernel(float dx, float sigma_t, float tbin_width)
+{
+  const float sqrt2 = 1.414213562373095f;
+  float denom = sqrt2 * sigma_t;
+  float x1 = (dx + 0.5f * tbin_width) / denom;
+  float x2 = (dx - 0.5f * tbin_width) / denom;
+  return 0.5f * (erff(x1) - erff(x2));
 }
