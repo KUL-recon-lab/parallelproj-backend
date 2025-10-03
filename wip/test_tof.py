@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import parallelproj_backend as ppb
 
 if ppb.PARALLELPROJ_CUDA:
-    import cupy as xp
+    # import cupy as xp
+    import numpy as xp
 else:
     import numpy as xp
 from scipy.special import erf
@@ -19,18 +20,18 @@ def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
     )
 
 
-img_dim = (5, 5, 5)
+img_dim = (51, 51, 51)
 voxsize = (2, 2, 2)
 
-xstart = (0, 0, 50)
-xend = (0, 0, -50)
+xstart = (-60, 0, 0)
+xend = (60, 0, 0)
 
-tofbin_width: float = 2.0
-sigma_tof: float = 8.0
+tofbin_width: float = 4.5
+sigma_tof: float = 12.0
 num_sigmas: float = 3.0
 tof_center_offset: float = 0.0
 
-show_fig = False
+show_fig = True
 
 num_tofbins: int | None = None
 
@@ -72,31 +73,6 @@ cf = voxsize[direction] / (cos_sq**0.5)
 # %%
 
 
-# %%
-# step through the volume plane by plane
-
-# assert direction == 0
-#
-# dr = dr_sq[direction] ** 0.5
-#
-##### ONLY VALID FOR direction == 0 ####
-# a1 = (d1 * voxsize[direction]) / (voxsize[1] * dr)
-# b1 = (
-#    xstart[1] - img_origin[1] + d1 * (img_origin[direction] - xstart[direction]) / dr
-# ) / voxsize[1]
-#
-# a2 = (d2 * voxsize[direction]) / (voxsize[2] * dr)
-# b2 = (
-#    xstart[2] - img_origin[2] + d2 * (img_origin[direction] - xstart[direction]) / dr
-# ) / voxsize[2]
-##### ONLY VALID FOR direction == 0 ####
-#
-# istart = 0
-# iend = img_dim[direction] - 1
-#
-# i1_f = istart * a1 + b1
-# i2_f = istart * a2 + b2
-
 #####################################
 #####################################
 #####################################
@@ -136,9 +112,6 @@ it_f: float = istart * at + bt
 
 
 for i in range(istart, iend + 1):
-    # print(f"{i0:03}, {i1_f:7.2f}, {i2_f:7.2f}, {x0_f:7.2f}, {x1_f:7.2f}, {x2_f:7.2f}")
-    # p[i] += bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
-
     # min and max tof bin for which we have to calculate tof weights
     it_min = math.floor(it_f - max_tof_bin_diff)
     it_max = math.ceil(it_f + max_tof_bin_diff)
@@ -164,9 +137,8 @@ for i in range(istart, iend + 1):
     it_f += at
 
 # %%
-
 img = xp.zeros(img_dim, dtype=xp.float32)
-img[2, 2, 2] = 1.0
+img[img_dim[0] // 2, img_dim[1] // 2, img_dim[2] // 2] = 1.0
 
 p_nontof = xp.zeros(1, dtype=xp.float32)
 p_tof = xp.zeros((1, num_tofbins), dtype=xp.float32)
@@ -193,6 +165,28 @@ ppb.joseph3d_tof_sino_fwd(
     num_tofbins,
     n_sigmas=num_sigmas,
 )
+
+# %%
+# backprojection
+
+q_tof = xp.zeros(p_tof.shape, dtype=xp.float32)
+q_tof[:, num_tofbins // 2] = 1.0
+
+img_back_tof = xp.zeros(img_dim, dtype=xp.float32)
+ppb.joseph3d_tof_sino_back(
+    xp.array([xstart], dtype=xp.float32),
+    xp.array([xend], dtype=xp.float32),
+    img_back_tof,
+    xp.array(img_origin, dtype=xp.float32),
+    xp.array(voxsize, dtype=xp.float32),
+    q_tof,
+    tofbin_width,
+    xp.array([sigma_tof], dtype=xp.float32),
+    xp.array([tof_center_offset], dtype=xp.float32),
+    num_tofbins,
+    n_sigmas=num_sigmas,
+)
+
 
 # %%
 if show_fig:
@@ -222,9 +216,12 @@ if show_fig:
         marker="x",
     )
 
-    ax.set_xlim(-60, 60)
-    ax.set_ylim(-60, 60)
-    ax.set_zlim(-60, 60)
+    vmin = min(xstart)
+    vmax = max(xend)
+
+    ax.set_xlim(vmin, vmax)
+    ax.set_ylim(vmin, vmax)
+    ax.set_zlim(vmin, vmax)
 
     fig2, ax2 = plt.subplots(figsize=(8, 6), layout="constrained")
     ax2.plot(tof_weights, "o-")
