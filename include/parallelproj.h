@@ -165,3 +165,72 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+  /**
+   * @brief TOF sinogram backprojection using the Joseph 3D algorithm.
+   *
+   * @note All pointer arguments may be host pointers, CUDA device pointers, or CUDA managed pointers.
+   *       The implementation will safely handle host/device/managed memory for small control arrays
+   *       (e.g. img_dim) and copy or access device memory as required.
+   *
+   * @details The function backprojects a TOF sinogram into a 3D image volume using the Joseph
+   *          ray-driven algorithm. The projection data p is organized row-major per LOR:
+   *          [LOR0-TOFBIN-0, LOR0-TOFBIN-1, ..., LOR0-TOFBIN-(n_tofbins-1),
+   *           LOR1-TOFBIN-0, LOR1-TOFBIN-1, ..., LOR1-TOFBIN-(n_tofbins-1), ...].
+   *          Values from p are distributed into img (accumulated, not overwritten).
+   *
+   * @param xstart Pointer to array of shape [3*nlors] with start coordinates for each LOR
+   *               (xstart[n*3 + i], i=0..2). Units are those of @p voxsize.
+   * @param xend   Pointer to array of shape [3*nlors] with end coordinates for each LOR
+   *               (xend[n*3 + i], i=0..2). Units are those of @p voxsize.
+   * @param img    Pointer to array of shape [n0*n1*n2] containing the 3D image to add backprojected
+   *               contributions into. The element (i,j,k) is stored at index n1*n2*i + n2*j + k.
+   *               Values are added to the existing contents of this array.
+   * @param img_origin Pointer to array [x0_0, x0_1, x0_2] giving the coordinates of the center of the
+   *                   voxel at index [0,0,0].
+   * @param voxsize Pointer to array [vs0, vs1, vs2] specifying voxel sizes in the same units as LOR coords.
+   * @param p      Pointer to TOF sinogram data of length nlors * n_tofbins (see details).
+   * @param nlors  Number of geometric LORs.
+   * @param img_dim Pointer to array [n0, n1, n2] with image dimensions. Can be host/device/managed.
+   * @param tofbin_width Width of each TOF bin in spatial units (same units as LOR coordinates).
+   * @param sigma_tof Pointer to array of length 1 or nlors (depending on
+   *                  lor_dependent_sigma_tof) specifying TOF sigma(s) in spatial units.
+   * @param tofcenter_offset Pointer to array of length 1 or nlors (depending on
+   *                         lor_dependent_tofcenter_offset) specifying per-LOR offset of the
+   *                         central TOF bin from the geometric midpoint (positive towards xend).
+   * @param n_sigmas Number of sigmas to consider when evaluating the TOF kernel (controls kernel radius).
+   * @param n_tofbins Number of TOF bins per LOR.
+   * @param lor_dependent_sigma_tof If non-zero, @p sigma_tof contains one sigma per LOR; otherwise the first
+   *                                element is used for all LORs.
+   * @param lor_dependent_tofcenter_offset If non-zero, @p tofcenter_offset contains one offset per LOR;
+   *                                       otherwise the first element is used for all LORs.
+   * @param device_id CUDA device to use (default: 0). If negative, CPU path is used when available.
+   * @param threadsperblock Number of CUDA threads per block for GPU execution (default: 64).
+   *
+   * @return void
+   */
+  PARALLELPROJ_API void joseph3d_tof_sino_back(const float *xstart,
+                                               const float *xend,
+                                               float *img,
+                                               const float *img_origin,
+                                               const float *voxsize,
+                                               const float *p,
+                                               size_t nlors,
+                                               const int *img_dim,
+                                               float tofbin_width,
+                                               const float *sigma_tof,
+                                               const float *tofcenter_offset,
+                                               float n_sigmas,
+                                               short n_tofbins,
+                                               unsigned char lor_dependent_sigma_tof,
+                                               unsigned char lor_dependent_tofcenter_offset,
+                                               int device_id = 0,
+                                               int threadsperblock = 64);
+#ifdef __cplusplus
+}
+#endif

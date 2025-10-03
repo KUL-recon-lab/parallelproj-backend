@@ -121,6 +121,7 @@ else()
         src/joseph3d_fwd.cpp
         src/joseph3d_back.cpp
         src/joseph3d_tof_sino_fwd.cpp
+        src/joseph3d_tof_sino_back.cpp
     )
 
     find_package(OpenMP REQUIRED)
