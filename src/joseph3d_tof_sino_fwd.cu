@@ -1,6 +1,5 @@
 #include "parallelproj.h"
 #include "joseph3d_tof_sino_fwd_worker.h"
-#include "debug.h"
 #include "cuda_utils.h"
 #include <cuda_runtime.h>
 #include <iostream>
@@ -121,13 +120,6 @@ void joseph3d_tof_sino_fwd(const float *xstart,
     // launch the kernel
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-
-#ifdef DEBUG
-    // get and print the current cuda device ID
-    int current_device_id;
-    cudaGetDevice(&current_device_id);
-    DEBUG_PRINT("Using CUDA device: %d\n", current_device_id);
-#endif
 
     int num_blocks = (int)((nlors + threadsperblock - 1) / threadsperblock);
     joseph3d_tof_sino_fwd_kernel<<<num_blocks, threadsperblock>>>(

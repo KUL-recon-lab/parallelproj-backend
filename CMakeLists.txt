@@ -102,6 +102,7 @@ if(USE_CUDA)
         src/joseph3d_fwd.cu
         src/joseph3d_back.cu
         src/joseph3d_tof_sino_fwd.cu
+        src/joseph3d_tof_sino_back.cu
         src/cuda_utils.cu
     )
 

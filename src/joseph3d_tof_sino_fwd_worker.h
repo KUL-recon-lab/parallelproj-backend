@@ -2,14 +2,6 @@
 #include "cuda_compat.h"
 #include "utils.h"
 
-#ifndef MAX_NUM_TOF_WEIGHTS
-// default 64 can be changed at compile time
-// for a TOF sinogram projector, we don't expect that more than 64 TOF bins will
-// have a significant contribution
-// if they have, bigger TOF bin widths should be used
-#define MAX_NUM_TOF_WEIGHTS 64
-#endif
-
 // Helper: compute TOF weights into caller buffer and scatter normalized contribution.
 // No bounds check for MAX_NUM_TOF_WEIGHTS (caller must provide a large enough buffer).
 WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
@@ -104,7 +96,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
   //////////////////////////////////////////////////////////////////////////////
   ////// calculate TOF-related parameters
   float toAdd;                              // non-TOF contribution to the projection value for a given image plane
-  float tof_weights[MAX_NUM_TOF_WEIGHTS];   // buffer to hold TOF weights for a given image plane
+  float tof_weights[MAX_NUM_TOF_WEIGHTS];   // buffer to hold TOF weights for a given image plane, MAX_NUM_TOF_WEIGHTS is defined in utils.h
   float costheta = voxsize[direction] / cf; // cosine of angle between ray and principal axis
 
   // get the sigma_tof and tofcenter_offset for this LOR depending on whether they are constant or LOR-dependent

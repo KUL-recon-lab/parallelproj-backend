@@ -14,6 +14,7 @@ WORKER_QUALIFIER static inline float _gather_back_tof_weights(
     size_t lor_offset,  // offset at which TOF values for given LOR start in p
     short n_tofbins)
 {
+  float toAdd = 0.0f;
   int it_min = static_cast<int>(floorf(it_f - max_tof_bin_diff));
   int it_max = static_cast<int>(ceilf(it_f + max_tof_bin_diff));
   int n_tof_weights = it_max + 1 - it_min;
@@ -54,7 +55,6 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_back_worker(size_t i,
                                                            unsigned char lor_dependent_sigma_tof,
                                                            unsigned char lor_dependent_tofcenter_offset)
 {
-  float tof_lor_sum = 0;
   // check whether the sum over TOF of the TOF sinogram to be backprojcted is > 0
   // if it is 0, we can skip the backprojection of this LOR
   size_t lor_offset = (size_t)i * (size_t)n_tofbins;
@@ -110,8 +110,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_back_worker(size_t i,
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   ////// calculate TOF-related parameters
-  float toAdd;                              // non-TOF contribution to the projection value for a given image plane
-  float tof_weights[MAX_NUM_TOF_WEIGHTS];   // buffer to hold TOF weights for a given image plane
+  float tof_weights[MAX_NUM_TOF_WEIGHTS];   // buffer to hold TOF weights for a given image plane, MAX_NUM_TOF_WEIGHTS is defined in utils.h
   float costheta = voxsize[direction] / cf; // cosine of angle between ray and principal axis
 
   // get the sigma_tof and tofcenter_offset for this LOR depending on whether they are constant or LOR-dependent
