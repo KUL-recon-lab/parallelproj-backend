@@ -148,13 +148,13 @@ extern "C"
    *  @param device_id ID of the device to use for computation (default: 0).
    *  @param threadsperblock Number of threads per block for GPU computation (default: 64).
    */
+
   PARALLELPROJ_API void joseph3d_tof_sino_fwd(const float *xstart,
                                               const float *xend,
                                               const float *img,
                                               const float *img_origin,
                                               const float *voxsize,
                                               float *p,
-                                              size_t nvoxels,
                                               size_t nlors,
                                               const int *img_dim,
                                               float tofbin_width,
@@ -164,8 +164,8 @@ extern "C"
                                               short n_tofbins,
                                               unsigned char lor_dependent_sigma_tof,
                                               unsigned char lor_dependent_tofcenter_offset,
-                                              int device_id,
-                                              int threadsperblock);
+                                              int device_id = 0,
+                                              int threadsperblock = 64);
 
 #ifdef __cplusplus
 }

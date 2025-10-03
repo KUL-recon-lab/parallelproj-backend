@@ -101,6 +101,7 @@ if(USE_CUDA)
     set(LIB_SOURCES
         src/joseph3d_fwd.cu
         src/joseph3d_back.cu
+        src/joseph3d_tof_sino_fwd.cu
         src/cuda_utils.cu
     )
 

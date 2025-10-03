@@ -104,14 +104,8 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   ////// calculate TOF-related parameters
-  int it_min;  // minimum TOF bin number to consider for a given image plane
-  int it_max;  // maximum TOF bin number to consider for a given image plane
-  float toAdd; // non-TOF contribution to the projection value for a given image plane
-  float dist;
-  float tof_weights[MAX_NUM_TOF_WEIGHTS]; // buffer to hold TOF weights for a given image plane
-  float sum_weights;
-  int k_start;
-  int k_end;
+  float toAdd;                              // non-TOF contribution to the projection value for a given image plane
+  float tof_weights[MAX_NUM_TOF_WEIGHTS];   // buffer to hold TOF weights for a given image plane
   float costheta = voxsize[direction] / cf; // cosine of angle between ray and principal axis
 
   // get the sigma_tof and tofcenter_offset for this LOR depending on whether they are constant or LOR-dependent
