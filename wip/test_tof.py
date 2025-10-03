@@ -1,6 +1,12 @@
 import math
-import numpy as np
+
 import matplotlib.pyplot as plt
+import parallelproj_backend as ppb
+
+if ppb.PARALLELPROJ_CUDA:
+    import cupy as xp
+else:
+    import numpy as xp
 from scipy.special import erf
 
 
@@ -137,7 +143,7 @@ for i in range(istart, iend + 1):
     it_min = math.floor(it_f - max_tof_bin_diff)
     it_max = math.ceil(it_f + max_tof_bin_diff)
 
-    tof_weights = np.zeros(it_max + 1 - it_min)
+    tof_weights = xp.zeros(it_max + 1 - it_min)
     for k, it in enumerate(range(it_min, it_max + 1)):
         dist = abs(it_f - it) * tofbin_width
         tof_weights[k] = effective_tof_kernel(dist, sigma_tof, tofbin_width)
@@ -158,33 +164,32 @@ for i in range(istart, iend + 1):
     it_f += at
 
 # %%
-import parallelproj_backend as ppb
 
-img = np.zeros(img_dim, dtype=np.float32)
+img = xp.zeros(img_dim, dtype=xp.float32)
 img[2, 2, 2] = 1.0
 
-p_nontof = np.zeros(1, dtype=np.float32)
-p_tof = np.zeros((1, num_tofbins), dtype=np.float32)
+p_nontof = xp.zeros(1, dtype=xp.float32)
+p_tof = xp.zeros((1, num_tofbins), dtype=xp.float32)
 
 ppb.joseph3d_fwd(
-    np.array([xstart], dtype=np.float32),
-    np.array([xend], dtype=np.float32),
+    xp.array([xstart], dtype=xp.float32),
+    xp.array([xend], dtype=xp.float32),
     img,
-    np.array(img_origin, dtype=np.float32),
-    np.array(voxsize, dtype=np.float32),
+    xp.array(img_origin, dtype=xp.float32),
+    xp.array(voxsize, dtype=xp.float32),
     p_nontof,
 )
 
 ppb.joseph3d_tof_sino_fwd(
-    np.array([xstart], dtype=np.float32),
-    np.array([xend], dtype=np.float32),
+    xp.array([xstart], dtype=xp.float32),
+    xp.array([xend], dtype=xp.float32),
     img,
-    np.array(img_origin, dtype=np.float32),
-    np.array(voxsize, dtype=np.float32),
+    xp.array(img_origin, dtype=xp.float32),
+    xp.array(voxsize, dtype=xp.float32),
     p_tof,
     tofbin_width,
-    np.array([sigma_tof], dtype=np.float32),
-    np.array([tof_center_offset], dtype=np.float32),
+    xp.array([sigma_tof], dtype=xp.float32),
+    xp.array([tof_center_offset], dtype=xp.float32),
     num_tofbins,
     n_sigmas=num_sigmas,
 )

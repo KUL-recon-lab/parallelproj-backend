@@ -53,8 +53,8 @@ void joseph3d_tof_sino_fwd(const float *xstart,
                            int device_id,
                            int threadsperblock)
 {
-    // Calculate nvoxels from img_dim
-    size_t nvoxels = static_cast<size_t>(img_dim[0]) * static_cast<size_t>(img_dim[1]) * static_cast<size_t>(img_dim[2]);
+    // Calculate nvoxels from img_dim - img_dim can be device pointer!
+    size_t nvoxels = cuda_nvoxels_from_img_dim(img_dim);
 
     // Set the CUDA device
     if (device_id >= 0)

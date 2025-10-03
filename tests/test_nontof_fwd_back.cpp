@@ -21,9 +21,9 @@ int test_box_projection_cpp()
   std::vector<float> img(nvox, 1.0f);
 
   // xstart and xend arrays
-  std::vector<std::vector<float>> xstart = {
+  std::vector<std::vector<float> > xstart = {
       {100, 0, 0}, {50, 0, 0}, {0, 50, 0}, {0, 0, 50}, {40, 0, 0}, {0, 40, 0}, {0, 0, 40}, {50, 5, 0}, {0, 50, 5}, {5, 0, 50}, {50, 5, -2}, {-2, 50, 5}, {5, -2, 50}};
-  std::vector<std::vector<float>> xend = {
+  std::vector<std::vector<float> > xend = {
       {-100, 0, 0}, {-50, 0, 0}, {0, -50, 0}, {0, 0, -50}, {-40, 0, 0}, {0, -40, 0}, {0, 0, -40}, {-50, -4, 0}, {0, -50, -4}, {-4, 0, -50}, {-50, -4, 3}, {3, -50, -4}, {-4, 3, -50}};
 
   std::vector<float> exp_vals = {
@@ -54,7 +54,6 @@ int test_box_projection_cpp()
       img_origin.data(),
       voxel_size.data(),
       img_fwd.data(),
-      nvox,
       n_lors,
       img_dim.data(),
       0, // device_id
@@ -129,7 +128,7 @@ int test_forward_and_back_projection_cpp()
   // Perform forward projection
   joseph3d_fwd(
       xstart.data(), xend.data(), img.data(),
-      img_origin.data(), voxsize.data(), img_fwd.data(), nvoxels,
+      img_origin.data(), voxsize.data(), img_fwd.data(),
       nlors, img_dim.data(), 0, 64);
 
   /////////////////////////////////////////////////////////////////////////////
@@ -172,7 +171,7 @@ int test_forward_and_back_projection_cpp()
 
   joseph3d_back(
       xstart.data(), xend.data(), bimg.data(),
-      img_origin.data(), voxsize.data(), ones.data(), nvoxels,
+      img_origin.data(), voxsize.data(), ones.data(),
       nlors, img_dim.data());
 
   printf("\nback projection of ones along all rays:\n");

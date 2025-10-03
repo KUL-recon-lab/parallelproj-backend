@@ -32,12 +32,14 @@ void joseph3d_fwd(const float *xstart,
                   const float *img_origin,
                   const float *voxsize,
                   float *p,
-                  size_t nvoxels,
                   size_t nlors,
                   const int *img_dim,
                   int device_id,
                   int threadsperblock)
 {
+    // Calculate nvoxels from img_dim - img_dim can be device pointer!
+    size_t nvoxels = cuda_nvoxels_from_img_dim(img_dim);
+
     // Set the CUDA device
     if (device_id >= 0)
     {

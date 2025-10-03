@@ -113,10 +113,9 @@ void joseph3d_fwd_py(py::object xstart,
   // Calculate nlors using xstart_shape (multiply shape except the last dimension)
   size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, static_cast<size_t>(1), std::multiplies<size_t>());
   int img_dim[3] = {static_cast<int>(img_shape[0]), static_cast<int>(img_shape[1]), static_cast<int>(img_shape[2])};
-  size_t nvoxels = static_cast<size_t>(img_dim[0]) * static_cast<size_t>(img_dim[1]) * static_cast<size_t>(img_dim[2]);
 
   // Call the C++ function
-  joseph3d_fwd(xstart_ptr, xend_ptr, img_ptr, img_origin_ptr, voxsize_ptr, p_ptr, nvoxels, nlors, img_dim, device_id, threadsperblock);
+  joseph3d_fwd(xstart_ptr, xend_ptr, img_ptr, img_origin_ptr, voxsize_ptr, p_ptr, nlors, img_dim, device_id, threadsperblock);
 }
 
 // Wrapper for joseph3d_back
@@ -168,10 +167,9 @@ void joseph3d_back_py(py::object xstart,
   // Calculate nlors using xstart_shape (multiply shape except the last dimension)
   size_t nlors = std::accumulate(xstart_shape.begin(), xstart_shape.end() - 1, static_cast<size_t>(1), std::multiplies<size_t>());
   int img_dim[3] = {static_cast<int>(img_shape[0]), static_cast<int>(img_shape[1]), static_cast<int>(img_shape[2])};
-  size_t nvoxels = static_cast<size_t>(img_dim[0]) * static_cast<size_t>(img_dim[1]) * static_cast<size_t>(img_dim[2]);
 
   // Call the C++ function
-  joseph3d_back(xstart_ptr, xend_ptr, img_ptr, img_origin_ptr, voxsize_ptr, p_ptr, nvoxels, nlors, img_dim, device_id, threadsperblock);
+  joseph3d_back(xstart_ptr, xend_ptr, img_ptr, img_origin_ptr, voxsize_ptr, p_ptr, nlors, img_dim, device_id, threadsperblock);
 }
 
 // Wrapper for joseph3d_tof_sino_fwd

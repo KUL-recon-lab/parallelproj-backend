@@ -32,8 +32,6 @@ int test_cuda_managed_arrays(int device_id, int threadsperblock)
     cm_img_origin[i] = (-(float)cm_img_dim[i] / 2 + 0.5f) * cm_voxsize[i];
   }
 
-  size_t nvoxels = cm_img_dim[0] * cm_img_dim[1] * cm_img_dim[2];
-
   std::vector<float> h_img = readArrayFromFile<float>("img.txt");
   float *cm_img;
   cudaMallocManaged(&cm_img, h_img.size() * sizeof(float));
@@ -66,7 +64,7 @@ int test_cuda_managed_arrays(int device_id, int threadsperblock)
 
   float *cm_img_fwd;
   cudaMallocManaged(&cm_img_fwd, nlors * sizeof(float));
-  joseph3d_fwd(cm_xstart, cm_xend, cm_img, cm_img_origin, cm_voxsize, cm_img_fwd, nvoxels, nlors, cm_img_dim, device_id, threadsperblock);
+  joseph3d_fwd(cm_xstart, cm_xend, cm_img, cm_img_origin, cm_voxsize, cm_img_fwd, nlors, cm_img_dim, device_id, threadsperblock);
 
   std::vector<float> h_expected_fwd_vals = readArrayFromFile<float>("expected_fwd_vals.txt");
   float fwd_diff = 0;
@@ -91,7 +89,7 @@ int test_cuda_managed_arrays(int device_id, int threadsperblock)
   cudaMallocManaged(&cm_ones, nlors * sizeof(float));
   std::fill(cm_ones, cm_ones + nlors, 1.0f);
 
-  joseph3d_back(cm_xstart, cm_xend, cm_bimg, cm_img_origin, cm_voxsize, cm_ones, nvoxels, nlors, cm_img_dim, device_id, threadsperblock);
+  joseph3d_back(cm_xstart, cm_xend, cm_bimg, cm_img_origin, cm_voxsize, cm_ones, nlors, cm_img_dim, device_id, threadsperblock);
 
   // Validate the back projection using adjointness
   float inner_product1 = 0.0f;
@@ -139,7 +137,6 @@ int test_cuda_device_arrays(int device_id, int threadsperblock)
   int *d_img_dim;
   cudaMalloc(&d_img_dim, 3 * sizeof(int));
   int h_img_dim[3] = {2, 3, 4};
-  size_t nvoxels = h_img_dim[0] * h_img_dim[1] * h_img_dim[2];
   cudaMemcpy(d_img_dim, h_img_dim, 3 * sizeof(int), cudaMemcpyHostToDevice);
 
   float *d_voxsize;
@@ -189,7 +186,7 @@ int test_cuda_device_arrays(int device_id, int threadsperblock)
   }
   float *d_img_fwd;
   cudaMalloc(&d_img_fwd, nlors * sizeof(float));
-  joseph3d_fwd(d_xstart, d_xend, d_img, d_img_origin, d_voxsize, d_img_fwd, nvoxels, nlors, d_img_dim, device_id, threadsperblock);
+  joseph3d_fwd(d_xstart, d_xend, d_img, d_img_origin, d_voxsize, d_img_fwd, nlors, d_img_dim, device_id, threadsperblock);
 
   std::vector<float> h_img_fwd(nlors);
   cudaMemcpy(h_img_fwd.data(), d_img_fwd, nlors * sizeof(float), cudaMemcpyDeviceToHost);
@@ -218,7 +215,7 @@ int test_cuda_device_arrays(int device_id, int threadsperblock)
   std::vector<float> h_ones(nlors, 1.0f);
   cudaMemcpy(d_ones, h_ones.data(), nlors * sizeof(float), cudaMemcpyHostToDevice);
 
-  joseph3d_back(d_xstart, d_xend, d_bimg, d_img_origin, d_voxsize, d_ones, nvoxels, nlors, d_img_dim, device_id, threadsperblock);
+  joseph3d_back(d_xstart, d_xend, d_bimg, d_img_origin, d_voxsize, d_ones, nlors, d_img_dim, device_id, threadsperblock);
 
   std::vector<float> h_bimg(h_img_dim[0] * h_img_dim[1] * h_img_dim[2]);
   cudaMemcpy(h_bimg.data(), d_bimg, h_bimg.size() * sizeof(float), cudaMemcpyDeviceToHost);
@@ -314,7 +311,7 @@ int test_box_projection_cuda_managed_arrays(int device_id, int threadsperblock)
 
   joseph3d_fwd(
       d_xstart, d_xend, d_img, d_img_origin, d_voxel_size, d_img_fwd,
-      nvox, n_lors, d_img_dim, device_id, threadsperblock);
+      n_lors, d_img_dim, device_id, threadsperblock);
 
   cudaDeviceSynchronize();
 
@@ -396,7 +393,7 @@ int test_box_projection_cuda_device_arrays(int device_id, int threadsperblock)
 
   joseph3d_fwd(
       dxstart, dxend, dimg, dimg_origin, dvoxel_size, dimg_fwd,
-      nvox, n_lors, dimg_dim, device_id, threadsperblock);
+      n_lors, dimg_dim, device_id, threadsperblock);
 
   std::vector<float> img_fwd2(n_lors, 0.0f);
   cudaMemcpy(img_fwd2.data(), dimg_fwd, n_lors * sizeof(float), cudaMemcpyDeviceToHost);

@@ -36,7 +36,6 @@ extern "C"
    * @param img_origin Pointer to array [x0_0, x0_1, x0_2] of coordinates of the center of the [0,0,0] voxel.
    * @param voxsize Pointer to array [vs0, vs1, vs2] of the voxel sizes.
    * @param p      Pointer to array of length nlors where the forward projection results will be stored.
-   * @param nvoxels Number of voxels in the image.
    * @param nlors  Number of geometrical LORs.
    * @param img_dim Pointer to array with dimensions of the image [n0, n1, n2].
    * @param device_id ID of the device to use for computation (default: 0).
@@ -48,7 +47,6 @@ extern "C"
                                      const float *img_origin,
                                      const float *voxsize,
                                      float *p,
-                                     size_t nvoxels,
                                      size_t nlors,
                                      const int *img_dim,
                                      int device_id = 0,
@@ -80,7 +78,6 @@ extern "C"
    * @param img_origin Pointer to array [x0_0, x0_1, x0_2] of coordinates of the center of the [0,0,0] voxel.
    * @param voxsize Pointer to array [vs0, vs1, vs2] of the voxel sizes.
    * @param p      Pointer to array of length nlors with the values to be backprojected.
-   * @param nvoxels Number of voxels in the image.
    * @param nlors  Number of geometrical LORs.
    * @param img_dim Pointer to array with dimensions of the image [n0, n1, n2].
    * @param device_id ID of the device to use for computation (default: 0).
@@ -92,7 +89,6 @@ extern "C"
                                       const float *img_origin,
                                       const float *voxsize,
                                       const float *p,
-                                      size_t nvoxels,
                                       size_t nlors,
                                       const int *img_dim,
                                       int device_id = 0,
@@ -127,7 +123,6 @@ extern "C"
    *                      LOR1-TOFBIN-0, LOR1-TOFBIN-1, ... LOR1-TOFBIN-(n-1),
    *                      ...
    *                      LOR(N-1)-TOFBIN-0, LOR(N-1)-TOFBIN-1, ... LOR(N-1)-TOFBIN-(n-1)]
-   *  @param nvoxels     number of voxels in the image (n0*n1*n2)
    *  @param nlors       number of geometrical LORs
    *  @param img_dim     array with dimensions of image [n0,n1,n2]
    *  @param tofbin_width     width of the TOF bins in spatial units (units of xstart and xend)

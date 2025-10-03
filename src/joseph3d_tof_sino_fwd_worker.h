@@ -30,7 +30,6 @@ WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
   float sum_weights = 0.0f;
   for (int k = 0; k < n_tof_weights; ++k)
   {
-    // print k and it_min + k to debug
     float dist = fabsf(it_f - it_min - k) * tofbin_width;
     tof_weights[k] = effective_gaussian_tof_kernel(dist, sig_tof, tofbin_width);
     sum_weights += tof_weights[k];
