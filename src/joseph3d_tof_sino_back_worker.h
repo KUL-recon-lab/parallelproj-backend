@@ -32,7 +32,7 @@ WORKER_QUALIFIER static inline float _gather_back_tof_weights(
   int k_end = ((it_min + n_tof_weights) > n_tofbins) ? (n_tofbins - it_min) : n_tof_weights;
   for (int k = k_start; k < k_end; ++k)
   {
-    toAdd = p[lor_offset + it_min + k] * tof_weights[k];
+    toAdd += p[lor_offset + it_min + k] * tof_weights[k];
   }
 
   toAdd /= sum_weights;
