@@ -8,7 +8,7 @@ namespace py = pybind11;
 
 // Helper function to extract raw pointer and shape
 template <typename T>
-std::pair<T *, std::vector<size_t> > extract_pointer_and_shape(py::object array)
+std::pair<T *, std::vector<size_t>> extract_pointer_and_shape(py::object array)
 {
   T *raw_ptr = nullptr;
   std::vector<size_t> shape;
@@ -42,9 +42,9 @@ std::pair<T *, std::vector<size_t> > extract_pointer_and_shape(py::object array)
     shape = std::vector<size_t>(dltensor.shape, dltensor.shape + dltensor.ndim);
   }
   // Handle NumPy arrays
-  else if (py::isinstance<py::array_t<T> >(array))
+  else if (py::isinstance<py::array_t<T>>(array))
   {
-    auto numpy_array = array.cast<py::array_t<T> >();
+    auto numpy_array = array.cast<py::array_t<T>>();
     raw_ptr = numpy_array.mutable_data();
     shape = std::vector<size_t>(numpy_array.shape(), numpy_array.shape() + numpy_array.ndim());
   }
@@ -52,8 +52,8 @@ std::pair<T *, std::vector<size_t> > extract_pointer_and_shape(py::object array)
   else if (py::hasattr(array, "__cuda_array_interface__"))
   {
     auto cuda_interface = array.attr("__cuda_array_interface__");
-    raw_ptr = reinterpret_cast<T *>(cuda_interface["data"].cast<std::pair<size_t, bool> >().first);
-    shape = cuda_interface["shape"].cast<std::vector<size_t> >();
+    raw_ptr = reinterpret_cast<T *>(cuda_interface["data"].cast<std::pair<size_t, bool>>().first);
+    shape = cuda_interface["shape"].cast<std::vector<size_t>>();
   }
   // Handle arrays using the __array_interface__ (Python Array API or array_api_strict)
   else
