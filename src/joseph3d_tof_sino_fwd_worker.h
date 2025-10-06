@@ -112,7 +112,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
   float sign = (xend[3 * i + direction] >= xstart[3 * i + direction]) ? 1.0 : -1.0;
 
   // the center of the first TOF bin (TOF bin 0) projected onto the principal axis
-  float tof_origin = 0.5 * (xstart[3 * i + direction] + xend[3 * i + direction]) - sign * (n_tofbins / 2 - 0.5) * (tofbin_width * costheta) + tofcen_offset * costheta;
+  float tof_origin = 0.5 * (xstart[3 * i + direction] + xend[3 * i + direction]) - sign * (0.5 * n_tofbins - 0.5) * (tofbin_width * costheta) + tofcen_offset * costheta;
   // slope of TOF bin number as a function of distance along the principal axis
   // the position of the TOF bins projects onto the principal axis is: tof_origin + tof_bin_number*tof_slope
   float tof_slope = sign * tofbin_width * costheta;
@@ -145,7 +145,6 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
     {
       // non-TOF contribution
       toAdd = cf * bilinear_interp_fixed0(img, n0, n1, n2, i0, i1_f, i2_f);
-
       _apply_fwd_tof_weights(it_f, max_tof_bin_diff, tofbin_width, sig_tof,
                              tof_weights, toAdd, p, i, n_tofbins);
 

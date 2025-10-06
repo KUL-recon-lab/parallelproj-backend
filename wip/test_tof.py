@@ -1,11 +1,9 @@
 import math
 
-import matplotlib.pyplot as plt
 import parallelproj_backend as ppb
 
 if ppb.PARALLELPROJ_CUDA:
-    # import cupy as xp
-    import numpy as xp
+    import cupy as xp
 else:
     import numpy as xp
 from scipy.special import erf
@@ -20,14 +18,14 @@ def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
     )
 
 
-img_dim = (51, 51, 51)
+img_dim = (19, 1, 1)
 voxsize = (2, 2, 2)
 
 xstart = (-60, 0, 0)
 xend = (60, 0, 0)
 
-tofbin_width: float = 4.5
-sigma_tof: float = 12.0
+tofbin_width: float = 3.0
+sigma_tof: float = 4.0
 num_sigmas: float = 3.0
 tof_center_offset: float = 0.0
 
@@ -44,6 +42,10 @@ if num_tofbins is None:
         + (xend[2] - xstart[2]) ** 2
     )
     num_tofbins = math.ceil(ray_length / tofbin_width)
+
+    # ensure num_tofbins is odd
+    if num_tofbins % 2 == 0:
+        num_tofbins += 1
 
 
 n0, n1, n2 = img_dim
@@ -94,7 +96,7 @@ sign: int = 1 if xend[direction] >= xstart[direction] else -1
 # are at it*a_tof + b_tof for it in range(num_tofbins)
 tof_origin: float = (
     0.5 * (xstart[direction] + xend[direction])
-    - sign * (num_tofbins / 2 - 0.5) * (tofbin_width * costheta)
+    - sign * (0.5 * num_tofbins - 0.5) * (tofbin_width * costheta)
     + tof_center_offset * costheta
 )
 tof_slope: float = sign * (tofbin_width * costheta)
@@ -130,7 +132,7 @@ for i in range(istart, iend + 1):
 
     ################################ diagnostics
     x_dir = i * voxsize[direction] + img_origin[direction]
-    print(i, num_tofbins, x_dir, it_f, it_min, it_max, tof_weights.sum(), trunc_tof_sum)
+    # print(i, num_tofbins, x_dir, it_f, it_min, it_max, tof_weights.sum(), trunc_tof_sum)
 
     ################################ diagnostics
 
@@ -138,7 +140,7 @@ for i in range(istart, iend + 1):
 
 # %%
 img = xp.zeros(img_dim, dtype=xp.float32)
-img[img_dim[0] // 2, img_dim[1] // 2, img_dim[2] // 2] = 1.0
+img[img_dim[0] // 2, 0, 0] = 1.0
 
 p_nontof = xp.zeros(1, dtype=xp.float32)
 p_tof = xp.zeros((1, num_tofbins), dtype=xp.float32)
@@ -170,7 +172,8 @@ ppb.joseph3d_tof_sino_fwd(
 # backprojection
 
 q_tof = xp.zeros(p_tof.shape, dtype=xp.float32)
-q_tof[:, num_tofbins // 2] = 1.0
+q_tof[0, num_tofbins // 2] = 1.0
+
 
 img_back_tof = xp.zeros(img_dim, dtype=xp.float32)
 ppb.joseph3d_tof_sino_back(
@@ -186,44 +189,3 @@ ppb.joseph3d_tof_sino_back(
     num_tofbins,
     n_sigmas=num_sigmas,
 )
-
-
-# %%
-if show_fig:
-    fig = plt.figure(figsize=(8, 8), layout="constrained")
-    ax = fig.add_subplot(111, projection="3d")
-
-    ax.plot([xstart[0], xend[0]], [xstart[1], xend[1]], [xstart[2], xend[2]], "r-")
-    ax.plot([xstart[0], xend[0]], [xstart[1], xstart[1]], [xstart[2], xstart[2]], "b-")
-
-    ax.scatter(xstart[0], xstart[1], xstart[2], c="r", marker="x")
-    ax.scatter(xend[0], xend[1], xend[2], c="r")
-    ax.scatter(xend[0], xstart[1], xstart[2], c="b")
-
-    ax.scatter(img_origin[0], xstart[1], xstart[2], marker=".", c="k")
-    ax.scatter(
-        img_origin[0] + voxsize[0] * (img_dim[0] - 1),
-        xstart[1],
-        xstart[2],
-        marker=".",
-        c="k",
-    )
-
-    ax.scatter(
-        [i * tof_slope + tof_origin for i in range(num_tofbins)],
-        num_tofbins * [xstart[1]],
-        num_tofbins * [xstart[2]],
-        marker="x",
-    )
-
-    vmin = min(xstart)
-    vmax = max(xend)
-
-    ax.set_xlim(vmin, vmax)
-    ax.set_ylim(vmin, vmax)
-    ax.set_zlim(vmin, vmax)
-
-    fig2, ax2 = plt.subplots(figsize=(8, 6), layout="constrained")
-    ax2.plot(tof_weights, "o-")
-
-    plt.show()

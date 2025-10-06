@@ -126,7 +126,7 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_back_worker(size_t i,
   float sign = (xend[3 * i + direction] >= xstart[3 * i + direction]) ? 1.0 : -1.0;
 
   // the center of the first TOF bin (TOF bin 0) projected onto the principal axis
-  float tof_origin = 0.5 * (xstart[3 * i + direction] + xend[3 * i + direction]) - sign * (n_tofbins / 2 - 0.5) * (tofbin_width * costheta) + tofcen_offset * costheta;
+  float tof_origin = 0.5 * (xstart[3 * i + direction] + xend[3 * i + direction]) - sign * (0.5 * n_tofbins - 0.5) * (tofbin_width * costheta) + tofcen_offset * costheta;
   // slope of TOF bin number as a function of distance along the principal axis
   // the position of the TOF bins projects onto the principal axis is: tof_origin + tof_bin_number*tof_slope
   float tof_slope = sign * tofbin_width * costheta;
