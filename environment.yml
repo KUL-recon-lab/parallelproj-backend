@@ -6,8 +6,7 @@ channels:
 dependencies:
   - c-compiler
   - cmake
-  - dlpack
-  - pybind11
+  - nanobind
   - numpy
   - array-api-compat
   - array-api-strict
