@@ -148,33 +148,27 @@ target_include_directories(parallelproj
 
 # Build the Python interface if enabled
 if(BUILD_PYTHON)
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-    message(STATUS "Python3 found at: ${Python3_EXECUTABLE}")
-    message(STATUS "Python3_SITELIB: ${Python3_SITELIB}")
-
-    # Add an option for the Python interface install destination
-    set(PYTHON_INTERFACE_INSTALL_DIR ${Python3_SITELIB})
-    message(STATUS "Python interface will be installed to: ${PYTHON_INTERFACE_INSTALL_DIR}")
-
-    # Enable the use of FindPython in pybind11
-    set(PYBIND11_FINDPYTHON ON)
-    # Find pybind11
-    find_package(pybind11 REQUIRED)
-
-    find_path(DLPACK_INCLUDE_DIR
-    NAMES dlpack/dlpack.h
-    DOC "Path to the DLPack include directory")
-
-    # Check if DLPack was found
-    if (NOT DLPACK_INCLUDE_DIR)
-        message(FATAL_ERROR "DLPack not found. Please install DLPack via conda or provide the path to dlpack.h.")
+    if (CMAKE_VERSION VERSION_LESS 3.18)
+      set(DEV_MODULE Development)
     else()
-        message(STATUS "DLPack found at: ${DLPACK_INCLUDE_DIR}")
+      set(DEV_MODULE Development.Module)
     endif()
 
-    # Add the Python module
-    pybind11_add_module(parallelproj_backend
-        python/bindings.cpp
+    find_package(Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
+
+    # Add an option for the Python interface install destination
+    set(PYTHON_INTERFACE_INSTALL_DIR ${Python_SITELIB})
+    message(STATUS "Python interface will be installed to: ${PYTHON_INTERFACE_INSTALL_DIR}")
+
+    # Detect the installed nanobind package and import it into CMake
+    execute_process(
+      COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+    find_package(nanobind CONFIG REQUIRED)
+
+    nanobind_add_module(
+      parallelproj_backend
+      python/bindings.cpp
     )
 
     target_include_directories(parallelproj_backend PRIVATE ${CMAKE_SOURCE_DIR}/include/parallelproj)
