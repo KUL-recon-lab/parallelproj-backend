@@ -260,7 +260,7 @@ if(BUILD_TESTS)
         ### ADD THE PYTHON INTERFACE TESTS ###
         find_program(PYTEST_EXECUTABLE pytest REQUIRED)
 
-        add_test(NAME python_interface_test COMMAND ${Python3_EXECUTABLE} -m  pytest -v ${CMAKE_SOURCE_DIR}/tests)
+        add_test(NAME python_interface_test COMMAND ${Python_EXECUTABLE} -m  pytest -v ${CMAKE_SOURCE_DIR}/tests)
 
         set_tests_properties(python_interface_test PROPERTIES ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:parallelproj_backend>$<SEMICOLON>$ENV{PYTHONPATH}")
     endif()

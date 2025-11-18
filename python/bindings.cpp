@@ -90,6 +90,82 @@ void joseph3d_fwd_py(ConstFloatNDArray xstart,
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+// Wrapper for joseph3d_back
+void joseph3d_back_py(ConstFloatNDArray xstart,
+                      ConstFloatNDArray xend,
+                      Float3DArray img,
+                      ConstFloat1D3ELArray img_origin,
+                      ConstFloat1D3ELArray voxsize,
+                      ConstFloatNDArray p,
+                      int device_id = 0,
+                      int threadsperblock = 64)
+{
+  // 1 check that ndim of xstart and xend >=2 and last dim ==3
+  if (xstart.ndim() < 2 || xstart.shape(xstart.ndim() - 1) != 3)
+    throw std::invalid_argument("xstart must have at least 2 dims and shape (..., 3)");
+
+  // 2 check that xstart and xend have same ndim and shape
+  if (xstart.ndim() != xend.ndim())
+    throw std::invalid_argument("xstart and xend must have the same number of dimensions");
+  for (size_t i = 0; i < xstart.ndim(); ++i)
+  {
+    if (xstart.shape(i) != xend.shape(i))
+      throw std::invalid_argument("xstart and xend must have the same shape");
+  }
+
+  // 3 check that the shape of p matches xstart.shape[:-1]
+  if (p.ndim() != xstart.ndim() - 1)
+    throw std::invalid_argument("p must have a shape equal to xstart.shape[:-1]");
+  for (size_t i = 0; i < p.ndim(); ++i)
+  {
+    if (p.shape(i) != xstart.shape(i))
+      throw std::invalid_argument("p must have a shape equal to xstart.shape[:-1]");
+  }
+
+  // 4 check that xstart, xend, img, img_origin, voxsize, p have the same device type
+  if (xstart.device_type() != xend.device_type() ||
+      xstart.device_type() != img.device_type() ||
+      xstart.device_type() != img_origin.device_type() ||
+      xstart.device_type() != voxsize.device_type() ||
+      xstart.device_type() != p.device_type())
+  {
+    throw std::invalid_argument("All input arrays must be on the same device type");
+  }
+
+  // 5 check that xstart, xend, img, img_origin, voxsize, p have the same device ID
+  if (xstart.device_id() != xend.device_id() ||
+      xstart.device_id() != img.device_id() ||
+      xstart.device_id() != img_origin.device_id() ||
+      xstart.device_id() != voxsize.device_id() ||
+      xstart.device_id() != p.device_id())
+  {
+    throw std::invalid_argument("All input arrays must be on the same device ID");
+  }
+
+  // 6 check that img_origin and voxsize have length 3
+  if (img_origin.shape(0) != 3)
+    throw std::invalid_argument("img_origin must be a 1D array with 3 elements");
+  if (voxsize.shape(0) != 3)
+    throw std::invalid_argument("voxsize must be a 1D array with 3 elements");
+
+  // 7 compute the number of LORs as the product of all dimensions except the last
+  // the last dimension must be 3 (3 floating point values per LOR endpoint)
+  size_t nlors = 1;
+  for (size_t i = 0; i < xstart.ndim() - 1; ++i)
+  {
+    nlors *= xstart.shape(i);
+  }
+
+  int img_dim[3] = {static_cast<int>(img.shape(0)),
+                    static_cast<int>(img.shape(1)),
+                    static_cast<int>(img.shape(2))};
+
+  joseph3d_back(xstart.data(), xend.data(), img.data(), img_origin.data(), voxsize.data(), p.data(), nlors, img_dim, device_id, threadsperblock);
+}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +192,12 @@ NB_MODULE(parallelproj_backend, m)
         "img_origin"_a.noconvert(), "voxsize"_a.noconvert(), "p"_a.noconvert(),
         "device_id"_a = 0, "threadsperblock"_a = 64,
         "Missing DOCSTRING for joseph3d_fwd");
+
+  m.def("joseph3d_back", &joseph3d_back_py,
+        "xstart"_a.noconvert(), "xend"_a.noconvert(), "img"_a.noconvert(),
+        "img_origin"_a.noconvert(), "voxsize"_a.noconvert(), "p"_a.noconvert(),
+        "device_id"_a = 0, "threadsperblock"_a = 64,
+        "Missing DOCSTRING for joseph3d_back");
 }
 
 // #include <pybind11/pybind11.h>
