@@ -1,7 +1,7 @@
 #pragma once
 #include "cuda_compat.h"
 #include "utils.h"
-#include <stdio.h>
+#include <stdexcept.h>
 
 // Helper: compute TOF weights into caller buffer and scatter normalized contribution.
 // No bounds check for MAX_NUM_TOF_WEIGHTS (caller must provide a large enough buffer).
@@ -41,7 +41,7 @@ WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
 
     if (it_min + k < 0 || it_min + k >= n_tofbins)
     {
-      printf("Warning: TOF bin index out of bounds: %d (it_min: %d, k: %d, n_tofbins: %d)\n", it_min + k, it_min, k, n_tofbins);
+      throw std::runtime_error("TOF bin index out of bounds");
     }
   }
 }
