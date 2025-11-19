@@ -1,13 +1,16 @@
-name: parallelproj_backend
+name: parallelproj_backend_cuda
 
 channels:
   - conda-forge
 
 dependencies:
   - cxx-compiler
+  - cuda-compiler<=12.4
   - cmake
   - nanobind
   - numpy
   - array-api-compat
   - array-api-strict
   - pytest
+  - cupy
+  - pytorch=*=cuda*

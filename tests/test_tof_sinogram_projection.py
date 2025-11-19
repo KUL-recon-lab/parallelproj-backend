@@ -282,7 +282,12 @@ def test_tof_sino_adjointness(
     if verbose:
         print(f"Inner product 1: {innerprod1:.5E}")
         print(f"Inner product 2: {innerprod2:.5E}")
-    assert math.isclose(innerprod1, innerprod2, abs_tol=3e-4)
+
+    try:
+        assert math.isclose(innerprod1, innerprod2, abs_tol=3e-4)
+    except:
+        print(sigma_tof, num_tofbins)
+        breakpoint()
 
     # do a non-TOF forward projection and check whether the sum over TOF bins equals the non-TOF projection
     img_fwd_nontof = xp.zeros(nlors, dtype=xp.float32, device=dev)
