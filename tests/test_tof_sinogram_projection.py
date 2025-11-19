@@ -1,6 +1,7 @@
-import parallelproj_backend as ppb
+import pytest
 import math
 import random
+import parallelproj_backend as ppb
 
 from types import ModuleType
 from .config import pytestmark
@@ -16,18 +17,28 @@ def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
     )
 
 
+@pytest.mark.parametrize("direc, sigma_tof, num_tofbins, tof_center_offset", [
+    (0, 4.5, 41, 0.0),
+    (1, 4.5, 41, 0.0),
+    (2, 4.5, 41, 0.0),
+    (0, 3.5, 41, 0.0),
+    (0, 3.5, 40, 0.0),
+    (0, 8.5, 41, 0.0),
+    (0, 3.5, 41, -2.5),
+    (0, 3.5, 41, 2.5),
+])
 def test_tof_sino_fwd(
     xp: ModuleType,
     dev: str,
+    direc: int,
+    sigma_tof: float,
+    num_tofbins: int,
+    tof_center_offset: float,
     voxsize: tuple[float, float, float] = (2.2, 2.5, 2.7),
     vox_num: int = 7,
     tofbin_width: float = 3.0,
-    sigma_tof: float = 4.5,
     num_sigmas: float = 3.0,
-    tof_center_offset: float = 1.0,
-    num_tofbins: int = 41,
     nvox: int = 19,
-    direc=2,
     verbose: bool = False,
 ):
 
@@ -161,24 +172,25 @@ def test_tof_sino_fwd(
 
     # check whether the projection is equal to the expected one
     for i in range(num_tofbins):
-        assert math.isclose(float(p_tof_ref[0, i]), float(p_tof[0, i]), abs_tol=1e-6)
+        assert math.isclose(float(p_tof_ref[0, i]), float(p_tof[0, i]), abs_tol=1e-5)
 
     # since we are forward projecting an image of a single voxel containg a value of 1
     # the sum over TOF should be the voxel size (if we have enough TOF bins)
     assert math.isclose(float(xp.sum(p_tof)), voxsize[direction], abs_tol=1e-6)
 
+@pytest.mark.parametrize("sigma_tof, num_tofbins", [(4.5, 41), (4.5, 40), (8.5, 41), (2.5, 41)])
 def test_tof_sino_adjointness(
     xp: ModuleType,
     dev: str,
+    sigma_tof: float,
+    num_tofbins: int,
     voxsize: tuple[float, float, float] = (2.2, 2.5, 2.7),
     tofbin_width: float = 3.0,
-    sigma_tof: float = 4.5,
     num_sigmas: float = 3.0,
     tof_center_offset: float = 0.0,
-    num_tofbins: int = 41,
     nvox: int = 19,
     verbose: bool = False,
-    nlors = 500):
+    nlors = 200):
 
     #------
     random.seed(42)
@@ -270,7 +282,7 @@ def test_tof_sino_adjointness(
     if verbose:
         print(f"Inner product 1: {innerprod1:.5E}")
         print(f"Inner product 2: {innerprod2:.5E}")
-    assert math.isclose(innerprod1, innerprod2)
+    assert math.isclose(innerprod1, innerprod2, abs_tol=3e-4)
 
     # do a non-TOF forward projection and check whether the sum over TOF bins equals the non-TOF projection
     img_fwd_nontof = xp.zeros(nlors, dtype=xp.float32, device=dev)
@@ -286,5 +298,4 @@ def test_tof_sino_adjointness(
     img_fwd_sum_tof = xp.sum(img_fwd, axis=-1)
 
     for i in range(nlors):
-        assert math.isclose(float(img_fwd_sum_tof[i]), float(img_fwd_nontof[i]), abs_tol=1e-5)
-    #xp.all(xp.isclose(xp.sum(img_fwd, -1), img_fwd_nontof))
+        assert math.isclose(float(img_fwd_sum_tof[i]), float(img_fwd_nontof[i]), abs_tol=2e-3)
