@@ -1,7 +1,7 @@
 #pragma once
 #include "cuda_compat.h"
 #include "utils.h"
-#include <stdexcept.h>
+#include <stdexcept>
 
 // Helper: compute TOF weights into caller buffer and scatter normalized contribution.
 // No bounds check for MAX_NUM_TOF_WEIGHTS (caller must provide a large enough buffer).
