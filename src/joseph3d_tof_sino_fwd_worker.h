@@ -1,7 +1,6 @@
 #pragma once
 #include "cuda_compat.h"
 #include "utils.h"
-#include <stdexcept>
 
 // Helper: compute TOF weights into caller buffer and scatter normalized contribution.
 // No bounds check for MAX_NUM_TOF_WEIGHTS (caller must provide a large enough buffer).
@@ -35,14 +34,6 @@ WORKER_QUALIFIER static inline void _apply_fwd_tof_weights(
   for (int k = k_start; k < k_end; ++k)
   {
     p[lor_idx * n_tofbins + it_min + k] += toAdd * tof_weights[k];
-
-    // print a warning if it_min + k is < 0 or > n_tofbins - 1
-    // (should not happen due to the k_start and k_end checks)
-
-    if (it_min + k < 0 || it_min + k >= n_tofbins)
-    {
-      throw std::runtime_error("TOF bin index out of bounds");
-    }
   }
 }
 
@@ -98,7 +89,10 @@ WORKER_QUALIFIER inline void joseph3d_tof_sino_fwd_worker(size_t i,
     return;
   }
 
-  p[i] = 0.0f;
+  for (short it = 0; it < n_tofbins; ++it)
+  {
+    p[i * n_tofbins + it] = 0.0f;
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
