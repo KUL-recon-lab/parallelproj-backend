@@ -1,5 +1,6 @@
 #include "parallelproj.h"
 #include "joseph3d_tof_sino_fwd_worker.h"
+#include <algorithm>
 
 void joseph3d_tof_sino_fwd(const float *xstart,
                            const float *xend,
@@ -19,6 +20,8 @@ void joseph3d_tof_sino_fwd(const float *xstart,
                            int device_id,
                            int threadsperblock)
 {
+  // Initialize output array to zero
+  std::fill_n(p, nlors * n_tofbins, 0.0f);
 
 #pragma omp parallel for
   for (long long i = 0; i < static_cast<long long>(nlors); ++i)
