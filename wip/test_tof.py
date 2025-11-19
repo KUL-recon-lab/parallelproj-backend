@@ -1,20 +1,19 @@
 import parallelproj_backend as ppb
-import numpy as np
 import math
+import random
 
 if ppb.PARALLELPROJ_CUDA:
     import cupy as xp
 else:
     import numpy as xp
-from scipy.special import erf
 
 
 def effective_tof_kernel(dx: float, sigma_t: float, tbin_width: float) -> float:
     """Gaussian integrated over a tof bin width."""
     sqrt2 = 1.414213562373095
     return 0.5 * (
-        erf((dx + 0.5 * tbin_width) / (sqrt2 * sigma_t))
-        - erf((dx - 0.5 * tbin_width) / (sqrt2 * sigma_t))
+        math.erf((dx + 0.5 * tbin_width) / (sqrt2 * sigma_t))
+        - math.erf((dx - 0.5 * tbin_width) / (sqrt2 * sigma_t))
     )
 
 
@@ -28,6 +27,7 @@ def test_tof_sino_fwd(
     num_tofbins: int = 41,
     nvox: int = 19,
     direc=2,
+    verbose: bool = False,
 ):
 
     img_dim = tuple(nvox if i == direc else 1 for i in range(3))
@@ -99,7 +99,7 @@ def test_tof_sino_fwd(
 
     img = xp.zeros(img_dim, dtype=xp.float32)
     img.ravel()[vox_num] = 1.0
-    p_tof_ref = xp.zeros((1, num_tofbins), dtype=np.float32)
+    p_tof_ref = xp.zeros((1, num_tofbins), dtype=xp.float32)
 
     for i in range(istart, iend + 1):
         # min and max tof bin for which we have to calculate tof weights
@@ -137,27 +137,131 @@ def test_tof_sino_fwd(
         n_sigmas=num_sigmas,
     )
 
+    if verbose:
+        for i in range(num_tofbins):
+            print(
+                f"bin {i:2d}: proj_ref = {p_tof_ref[0,i]:.5E}, proj_ppb = {p_tof[0,i]:.5E}"
+            )
+
+    # check whether the projection is equal to the expected one
     assert xp.all(xp.isclose(p_tof_ref, p_tof, atol=1e-6))
 
+    # since we are forward projecting an image of a single voxel containg a value of 1
+    # the sum over TOF should be the voxel size (if we have enough TOF bins)
+    assert xp.isclose(float(xp.sum(p_tof)), voxsize[direction], atol=1e-6)
 
-## %%
-## backprojection
-#
-# q_tof = xp.zeros(p_tof.shape, dtype=xp.float32)
-# q_tof[0, num_tofbins // 2] = 1.0
-#
-#
-# img_back_tof = xp.zeros(img_dim, dtype=xp.float32)
-# ppb.joseph3d_tof_sino_back(
-#    xp.array([xstart], dtype=xp.float32),
-#    xp.array([xend], dtype=xp.float32),
-#    img_back_tof,
-#    xp.array(img_origin, dtype=xp.float32),
-#    xp.array(voxsize, dtype=xp.float32),
-#    q_tof,
-#    tofbin_width,
-#    xp.array([sigma_tof], dtype=xp.float32),
-#    xp.array([tof_center_offset], dtype=xp.float32),
-#    num_tofbins,
-#    n_sigmas=num_sigmas,
-# )
+def test_tof_sino_adjointness(
+    voxsize: tuple[float, float, float] = (2.2, 2.5, 2.7),
+    tofbin_width: float = 3.0,
+    sigma_tof: float = 4.5,
+    num_sigmas: float = 3.0,
+    tof_center_offset: float = 0.0,
+    num_tofbins: int = 41,
+    nvox: int = 19,
+    verbose: bool = False,
+    nlors = 500):
+
+    #------
+    random.seed(42)
+    img_dim = (nvox, nvox, nvox)
+
+    n0, n1, n2 = img_dim
+    img_origin = (
+        (-(n0 / 2) + 0.5) * voxsize[0],
+        (-(n1 / 2) + 0.5) * voxsize[1],
+        (-(n2 / 2) + 0.5) * voxsize[2],
+    )
+
+
+    img = xp.zeros(img_dim, dtype=xp.float32)
+    # fill the image with uniform random values using python's random module
+    for i in range(n0):
+        for j in range(n1):
+            for k in range(n2):
+                img[i, j, k] = random.uniform(0.0, 1.0)
+
+    xstart = xp.zeros((nlors, 3), dtype=xp.float32)
+    xend = xp.zeros((nlors, 3), dtype=xp.float32)
+
+    # fill xstart and xend with random points on a sphere with radius 45
+    r = 45.0
+    for i in range(nlors):
+        theta = random.uniform(0.0, math.pi)
+        phi = random.uniform(0.0, 2.0 * math.pi)
+        xstart[i, 0] = r * math.sin(theta) * math.cos(phi)
+        xstart[i, 1] = r * math.sin(theta) * math.sin(phi)
+        xstart[i, 2] = r * math.cos(theta)
+
+        theta = random.uniform(0.0, math.pi)
+        phi = random.uniform(0.0, 2.0 * math.pi)
+        xend[i, 0] = r * math.sin(theta) * math.cos(phi)
+        xend[i, 1] = r * math.sin(theta) * math.sin(phi)
+        xend[i, 2] = r * math.cos(theta)
+
+
+    # simulate LOR-dependent TOF resolution and center offsets
+    sigma_tof_array = xp.zeros(nlors, dtype=xp.float32)
+    for i in range(nlors):
+        sigma_tof_array[i] = sigma_tof * random.uniform(0.9,1.1)
+
+    tof_center_offset_array = xp.zeros(nlors, dtype=xp.float32)
+    for i in range(nlors):
+        tof_center_offset_array[i] = tof_center_offset + random.uniform(-2.0,2.0)
+
+    img_fwd = xp.zeros((nlors, num_tofbins), dtype=xp.float32)
+    ppb.joseph3d_tof_sino_fwd(
+        xstart,
+        xend,
+        img,
+        xp.array(img_origin, dtype=xp.float32),
+        xp.array(voxsize, dtype=xp.float32),
+        img_fwd,
+        tofbin_width,
+        sigma_tof_array,
+        tof_center_offset_array,
+        num_tofbins,
+        n_sigmas=num_sigmas,
+    )
+
+    # back project a random TOF sinogram
+    y = xp.zeros((nlors, num_tofbins), dtype=xp.float32)
+    for i in range(nlors):
+        for j in range(num_tofbins):
+            y[i, j] = random.uniform(0.0, 1.0)
+
+    y_back = xp.zeros(img_dim, dtype=xp.float32)
+    ppb.joseph3d_tof_sino_back(
+        xstart,
+        xend,
+        y_back,
+        xp.array(img_origin, dtype=xp.float32),
+        xp.array(voxsize, dtype=xp.float32),
+        y,
+        tofbin_width,
+        sigma_tof_array,
+        tof_center_offset_array,
+        num_tofbins,
+        n_sigmas=num_sigmas,
+    )
+
+    # test the adjointness property
+    innerprod1 = float(xp.sum(img_fwd * y))
+    innerprod2 = float(xp.sum(img * y_back))
+
+    if verbose:
+        print(f"Inner product 1: {innerprod1:.5E}")
+        print(f"Inner product 2: {innerprod2:.5E}")
+    assert xp.isclose(innerprod1, innerprod2)
+
+    # do a non-TOF forward projection and check whether the sum over TOF bins equals the non-TOF projection
+    img_fwd_nontof = xp.zeros(nlors, dtype=xp.float32)
+    ppb.joseph3d_fwd(
+        xstart,
+        xend,
+        img,
+        xp.array(img_origin, dtype=xp.float32),
+        xp.array(voxsize, dtype=xp.float32),
+        img_fwd_nontof
+    )
+
+    xp.all(xp.isclose(xp.sum(img_fwd, -1), img_fwd_nontof))
